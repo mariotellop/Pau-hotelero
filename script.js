@@ -7,19 +7,55 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
-// Fondo de cielo
-scene.background = new THREE.Color(0x87CEEB);
+// Fondo de cielo (dinámico con nubes)
+const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
+const skyMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+        time: { value: 0.0 },
+        dayColor: { value: new THREE.Color(0x87CEEB) },
+        nightColor: { value: new THREE.Color(0x191970) },
+        isDay: { value: 1.0 }
+    },
+    vertexShader: `
+        varying vec3 vWorldPosition;
+        void main() {
+            vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `,
+    fragmentShader: `
+        uniform float time;
+        uniform vec3 dayColor;
+        uniform vec3 nightColor;
+        uniform float isDay;
+        varying vec3 vWorldPosition;
+        void main() {
+            vec3 color = mix(nightColor, dayColor, isDay);
+            float cloudNoise = sin(vWorldPosition.x * 0.01 + time) * cos(vWorldPosition.z * 0.01 + time);
+            float cloud = smoothstep(0.2, 0.8, cloudNoise);
+            gl_FragColor = vec4(mix(color, vec3(1.0), cloud * isDay), 1.0);
+        }
+    `,
+    side: THREE.BackSide
+});
+const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+scene.add(sky);
 
 // Luces
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
 scene.add(ambientLight);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-directionalLight.position.set(40, 50, 40);
+
+const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0);
+directionalLight.position.set(50, 70, 50);
 directionalLight.castShadow = true;
 directionalLight.shadow.mapSize.width = 2048;
 directionalLight.shadow.mapSize.height = 2048;
 directionalLight.shadow.camera.near = 0.5;
 directionalLight.shadow.camera.far = 500;
+directionalLight.shadow.camera.left = -60;
+directionalLight.shadow.camera.right = 60;
+directionalLight.shadow.camera.top = 60;
+directionalLight.shadow.camera.bottom = -60;
 directionalLight.shadow.bias = -0.00005;
 scene.add(directionalLight);
 
@@ -39,31 +75,6 @@ const interiorLight = new THREE.PointLight(0xFFFFE0, 0.5, 50);
 interiorLight.position.set(0, 14, -30);
 interiorLight.castShadow = true;
 scene.add(interiorLight);
-
-// Sonidos
-const listener = new THREE.AudioListener();
-camera.add(listener);
-
-const clickSound = new THREE.Audio(listener);
-const audioLoader = new THREE.AudioLoader();
-audioLoader.load('https://threejs.org/examples/sounds/click.mp3', function(buffer) {
-    clickSound.setBuffer(buffer);
-    clickSound.setVolume(0.5);
-});
-
-const daySound = new THREE.Audio(listener);
-audioLoader.load('https://threejs.org/examples/sounds/birdsong.mp3', function(buffer) {
-    daySound.setBuffer(buffer);
-    daySound.setLoop(true);
-    daySound.setVolume(0.3);
-});
-
-const nightSound = new THREE.Audio(listener);
-audioLoader.load('https://threejs.org/examples/sounds/cricket.mp3', function(buffer) {
-    nightSound.setBuffer(buffer);
-    nightSound.setLoop(true);
-    nightSound.setVolume(0.3);
-});
 
 // Función para crear texturas avanzadas con canvas
 function createTexture(color, pattern, type) {
@@ -129,7 +140,7 @@ terrain.rotation.x = -Math.PI / 2;
 terrain.receiveShadow = true;
 scene.add(terrain);
 
-// Edificio Principal con dos plantas (con textura)
+// Edificio Principal con dos plantas (sin placas solares)
 const buildingGeometry = new THREE.BoxGeometry(70, 18, 55);
 const buildingMaterial = new THREE.MeshLambertMaterial({ map: buildingTexture });
 const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
@@ -145,6 +156,17 @@ entrance.position.set(0, 3, -2.5);
 entrance.castShadow = true;
 entrance.receiveShadow = true;
 scene.add(entrance);
+
+// Ventanas solo en la fachada este (x positivo)
+const windowGeometry = new THREE.BoxGeometry(3, 2, 0.1);
+const windowMaterial = new THREE.MeshLambertMaterial({ color: 0x4682B4 });
+for (let i = 0; i < 10; i++) {
+    const windowMeshEast = new THREE.Mesh(windowGeometry, windowMaterial);
+    windowMeshEast.position.set(35, 8 + i % 2 * 4, -55 + i * 6);
+    windowMeshEast.rotation.y = Math.PI;
+    windowMeshEast.castShadow = true;
+    scene.add(windowMeshEast);
+}
 
 // Planta baja (locales)
 const shopGeometry = new THREE.BoxGeometry(20, 6, 20);
@@ -315,8 +337,7 @@ for (let i = 0; i < 4; i++) {
     scene.add(nightstandWestRight);
     nightstandsWestRight.push(nightstandWestRight);
 
-    const bedGeometryEast = new THREE.BoxGeometry(5, 1, 10);
-    const bedEast = new THREE.Mesh(bedGeometryEast, bedMaterial);
+    const bedEast = new THREE.Mesh(bedGeometryWest, bedMaterial);
     bedEast.position.set(25 - i * 15, 6.5, -40);
     bedEast.receiveShadow = true;
     bedEast.castShadow = true;
@@ -349,49 +370,7 @@ for (let i = 0; i < 4; i++) {
     nightstandsEastRight.push(nightstandEastRight);
 }
 
-// Paredes con ventanas (exterior)
-const windowGeometry = new THREE.BoxGeometry(3, 2, 0.1);
-const windowMaterial = new THREE.MeshLambertMaterial({ color: 0x4682B4 });
-for (let i = 0; i < 10; i++) {
-    const windowMeshWest = new THREE.Mesh(windowGeometry, windowMaterial);
-    windowMeshWest.position.set(-32 + i * 7, 8, -57.5);
-    windowMeshWest.castShadow = true;
-    scene.add(windowMeshWest);
-    const windowMeshEast = new THREE.Mesh(windowGeometry, windowMaterial);
-    windowMeshEast.position.set(-32 + i * 7, 8, -2.5);
-    windowMeshEast.rotation.y = Math.PI;
-    windowMeshEast.castShadow = true;
-    scene.add(windowMeshEast);
-}
-for (let i = 0; i < 7; i++) {
-    const windowP1West = new THREE.Mesh(windowGeometry, windowMaterial);
-    windowP1West.position.set(-24 + i * 7, 12, -57.5);
-    windowP1West.castShadow = true;
-    scene.add(windowP1West);
-    const windowP2West = new THREE.Mesh(windowGeometry, windowMaterial);
-    windowP2West.position.set(-24 + i * 7, 16, -57.5);
-    windowP2West.castShadow = true;
-    scene.add(windowP2West);
-    const windowP1East = new THREE.Mesh(windowGeometry, windowMaterial);
-    windowP1East.position.set(-24 + i * 7, 12, -2.5);
-    windowP1East.rotation.y = Math.PI;
-    windowP1East.castShadow = true;
-    scene.add(windowP1East);
-    const windowP2East = new THREE.Mesh(windowGeometry, windowMaterial);
-    windowP2East.position.set(-24 + i * 7, 16, -2.5);
-    windowP2East.rotation.y = Math.PI;
-    windowP2East.castShadow = true;
-    scene.add(windowP2East);
-}
-
-// Azotea con cartel
-const solarGeometry = new THREE.BoxGeometry(70, 0.2, 40);
-const solarMaterial = new THREE.MeshLambertMaterial({ color: 0x1C2526 });
-const solarPanels = new THREE.Mesh(solarGeometry, solarMaterial);
-solarPanels.position.set(0, 18.1, -30);
-solarPanels.castShadow = true;
-scene.add(solarPanels);
-
+// Azotea con terraza (sin placas solares)
 const terraceGeometry = new THREE.BoxGeometry(20, 0.1, 20);
 const terraceMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
 const terrace = new THREE.Mesh(terraceGeometry, terraceMaterial);
@@ -399,30 +378,116 @@ terrace.position.set(25, 18.05, -45);
 terrace.castShadow = true;
 scene.add(terrace);
 
-function createSign(text, position) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 64;
-    const context = canvas.getContext('2d');
-    context.fillStyle = '#000000';
-    context.fillRect(0, 0, 256, 64);
-    context.font = '30px Arial';
-    context.fillStyle = 'white';
-    context.textAlign = 'center';
-    context.fillText(text, 128, 40);
-    const texture = new THREE.Texture(canvas);
-    texture.needsUpdate = true;
-    const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
-    const sprite = new THREE.Sprite(spriteMaterial);
-    sprite.scale.set(20, 5, 1);
-    sprite.position.copy(position);
-    return sprite;
+// Piscina Exterior con efecto de agua simplificado
+const poolGeometry = new THREE.BoxGeometry(25, 0.1, 25);
+const poolMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+        time: { value: 0.0 },
+        baseColor: { value: new THREE.Color(0x00BFFF) }
+    },
+    vertexShader: `
+        varying vec2 vUv;
+        void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `,
+    fragmentShader: `
+        uniform float time;
+        uniform vec3 baseColor;
+        varying vec2 vUv;
+
+        void main() {
+            float wave = sin(vUv.x * 15.0 + time * 2.0) * cos(vUv.y * 15.0 + time * 2.0) * 0.1;
+            vec3 color = baseColor + vec3(wave, wave, wave * 0.5);
+            gl_FragColor = vec4(color, 0.9); // Semi-transparente
+        }
+    `,
+    transparent: true
+});
+const pool = new THREE.Mesh(poolGeometry, poolMaterial);
+pool.position.set(45, 0.1, 45);
+pool.receiveShadow = true;
+scene.add(pool);
+
+// Tumbonas alrededor de la piscina
+const loungeChairGeometry = new THREE.BoxGeometry(2, 0.2, 4);
+const loungeChairMaterial = new THREE.MeshLambertMaterial({ color: 0xF5F5F5 });
+const loungeChairs = [];
+
+function createLoungeChair(x, z, rotationY = 0) {
+    const loungeChair = new THREE.Mesh(loungeChairGeometry, loungeChairMaterial);
+    loungeChair.position.set(x, 0.1, z);
+    loungeChair.rotation.y = rotationY;
+    loungeChair.castShadow = true;
+    loungeChair.receiveShadow = true;
+    loungeChair.userData = { info: 'Tumbona junto a la piscina' };
+    scene.add(loungeChair);
+    loungeChairs.push(loungeChair);
+    return loungeChair;
 }
 
-const hotelSign = createSign('Hotel Villa Terrae', new THREE.Vector3(0, 20, -30));
-scene.add(hotelSign);
+// Colocar tumbonas alrededor de la piscina
+createLoungeChair(35, 55);          // Suroeste
+createLoungeChair(55, 55);          // Sureste
+createLoungeChair(35, 35, Math.PI); // Noroeste (rotada 180°)
+createLoungeChair(55, 35, Math.PI); // Noreste (rotada 180°)
 
-// Pistas de Tenis con líneas de campo, red ajustada y postes (con textura)
+// Sombrillas alrededor de la piscina
+const umbrellaPoleGeometry = new THREE.CylinderGeometry(0.1, 0.1, 3, 16);
+const umbrellaPoleMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+const umbrellaCoverGeometry = new THREE.ConeGeometry(2, 1.5, 16);
+const umbrellaCoverMaterial = new THREE.MeshLambertMaterial({ color: 0xFF4500 });
+const umbrellas = [];
+
+function createUmbrella(x, z) {
+    const umbrellaGroup = new THREE.Group();
+    const pole = new THREE.Mesh(umbrellaPoleGeometry, umbrellaPoleMaterial);
+    pole.position.set(0, 1.5, 0);
+    umbrellaGroup.add(pole);
+
+    const cover = new THREE.Mesh(umbrellaCoverGeometry, umbrellaCoverMaterial);
+    cover.position.set(0, 3, 0);
+    umbrellaGroup.add(cover);
+
+    umbrellaGroup.position.set(x, 0, z);
+    umbrellaGroup.castShadow = true;
+    umbrellaGroup.receiveShadow = true;
+    umbrellaGroup.userData = { info: 'Sombrilla junto a la piscina' };
+    scene.add(umbrellaGroup);
+    umbrellas.push(umbrellaGroup);
+    return umbrellaGroup;
+}
+
+// Colocar sombrillas cerca de las tumbonas
+createUmbrella(33, 55);  // Suroeste, cerca de la tumbona
+createUmbrella(57, 55);  // Sureste, cerca de la tumbona
+createUmbrella(33, 35);  // Noroeste, cerca de la tumbona
+createUmbrella(57, 35);  // Noreste, cerca de la tumbona
+
+// Mesas pequeñas junto a las tumbonas
+const smallTableGeometry = new THREE.BoxGeometry(1, 0.5, 1);
+const smallTableMaterial = new THREE.MeshLambertMaterial({ color: 0xDEB887 }); // Color madera
+const smallTables = [];
+
+function createSmallTable(x, z) {
+    const smallTable = new THREE.Mesh(smallTableGeometry, smallTableMaterial);
+    smallTable.position.set(x, 0.25, z);
+    smallTable.castShadow = true;
+    smallTable.receiveShadow = true;
+    smallTable.userData = { info: 'Mesa junto a la piscina' };
+    scene.add(smallTable);
+    smallTables.push(smallTable);
+    return smallTable;
+}
+
+// Colocar mesas cerca de las tumbonas
+createSmallTable(34, 57);  // Suroeste, entre tumbona y sombrilla
+createSmallTable(56, 57);  // Sureste, entre tumbona y sombrilla
+createSmallTable(34, 33);  // Noroeste, entre tumbona y sombrilla
+createSmallTable(56, 33);  // Noreste, entre tumbona y sombrilla
+
+// Pistas de Tenis con líneas de campo, red ajustada y postes (con placas solares)
 const tennisGeometry = new THREE.BoxGeometry(36, 0.5, 18);
 const tennisMaterial = new THREE.MeshLambertMaterial({ map: tennisTexture });
 const tennisCourts = [];
@@ -496,15 +561,15 @@ for (let i = 0; i < 3; i++) {
     rightPost.castShadow = true;
     scene.add(rightPost);
 
-    const roofGeometry = new THREE.BoxGeometry(38, 0.2, 20);
-    const roofMaterial = new THREE.MeshLambertMaterial({ color: 0x808080 });
-    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-    roof.position.set(-48 + i * 40, 10, 10);
-    roof.castShadow = true;
-    scene.add(roof);
+    const solarRoofGeometry = new THREE.BoxGeometry(38, 0.2, 20);
+    const solarRoofMaterial = new THREE.MeshLambertMaterial({ color: 0x1C2526 });
+    const solarRoof = new THREE.Mesh(solarRoofGeometry, solarRoofMaterial);
+    solarRoof.position.set(-48 + i * 40, 10, 10);
+    solarRoof.castShadow = true;
+    scene.add(solarRoof);
 }
 
-// Pistas de Pádel con líneas de campo, red y postes (con textura)
+// Pistas de Pádel con líneas de campo, red y postes (con placas solares)
 const padelGeometry = new THREE.BoxGeometry(20, 0.5, 10);
 const padelMaterial = new THREE.MeshLambertMaterial({ map: padelTexture });
 const padelCourts = [];
@@ -564,21 +629,61 @@ for (let i = 0; i < 3; i++) {
     rightPost.castShadow = true;
     scene.add(rightPost);
 
-    const roofGeometry = new THREE.BoxGeometry(22, 0.2, 12);
-    const roofMaterial = new THREE.MeshLambertMaterial({ color: 0x808080 });
-    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-    roof.position.set(-30 + i * 25, 8, 30);
-    roof.castShadow = true;
-    scene.add(roof);
+    const solarRoofGeometry = new THREE.BoxGeometry(22, 0.2, 12);
+    const solarRoofMaterial = new THREE.MeshLambertMaterial({ color: 0x1C2526 });
+    const solarRoof = new THREE.Mesh(solarRoofGeometry, solarRoofMaterial);
+    solarRoof.position.set(-30 + i * 25, 8, 30);
+    solarRoof.castShadow = true;
+    scene.add(solarRoof);
 }
 
-// Piscina Exterior (con textura animada)
-const poolGeometry = new THREE.BoxGeometry(25, 0.1, 25);
-const poolMaterial = new THREE.MeshBasicMaterial({ map: poolTexture });
-const pool = new THREE.Mesh(poolGeometry, poolMaterial);
-pool.position.set(45, 0.1, 45);
-pool.receiveShadow = true;
-scene.add(pool);
+// Raycaster para interacción (incluye tumbonas, sombrillas y mesas)
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const interactiveObjects = [
+    building, ...tennisCourts, ...padelCourts, pool, ...loungeChairs, ...umbrellas, ...smallTables,
+    ...chairs, table, plant,
+    ...bedsWest, ...bedsEast, ...headboardsWest, ...headboardsEast,
+    ...nightstandsWestLeft, ...nightstandsWestRight, ...nightstandsEastLeft, ...nightstandsEastRight
+];
+const detailsDiv = document.getElementById('details');
+const dayNightDiv = document.getElementById('dayNight');
+
+// Farolas
+const streetLightGeometry = new THREE.CylinderGeometry(0.2, 0.2, 5, 16);
+const streetLightMaterial = new THREE.MeshLambertMaterial({ color: 0x808080 });
+const lightBulbGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+const lightBulbMaterial = new THREE.MeshLambertMaterial({ color: 0xFFFF99, emissive: 0xFFFF99 });
+const streetLights = [];
+
+function createStreetLight(x, z) {
+    const pole = new THREE.Mesh(streetLightGeometry, streetLightMaterial);
+    pole.position.set(x, 2.5, z);
+    pole.castShadow = true;
+    scene.add(pole);
+
+    const bulb = new THREE.Mesh(lightBulbGeometry, lightBulbMaterial);
+    bulb.position.set(x, 5, z);
+    bulb.castShadow = true;
+    scene.add(bulb);
+
+    const light = new THREE.PointLight(0xFFFF99, 0, 20);
+    light.position.set(x, 5, z);
+    light.castShadow = true;
+    scene.add(light);
+
+    streetLights.push(light);
+}
+
+// Colocar farolas alrededor de las pistas y la piscina
+createStreetLight(-70, 20);  // Tenis oeste
+createStreetLight(-30, 25);  // Tenis centro
+createStreetLight(10, 20);   // Tenis este
+createStreetLight(-60, 40);  // Pádel oeste
+createStreetLight(-30, 45);  // Pádel centro
+createStreetLight(0, 40);    // Pádel este
+createStreetLight(30, 55);   // Piscina suroeste
+createStreetLight(60, 55);   // Piscina sureste
 
 // Jardines con arbustos (ajustados para evitar piscina y hotel)
 const gardenGeometry = new THREE.BoxGeometry(120, 0.1, 20);
@@ -633,28 +738,39 @@ const rain = new THREE.Points(rainGeometry, rainMaterial);
 rain.visible = false;
 scene.add(rain);
 
-// Etiquetas
-function createLabel(text, position) {
+// Etiquetas para puntos cardinales y otras áreas
+const buildingLabel = createSign('Hotel 4*', new THREE.Vector3(0, 21, -30));
+const tennisLabel = createSign('Pistas de Tenis', new THREE.Vector3(-8, 12, 10));
+const padelLabel = createSign('Pistas de Pádel', new THREE.Vector3(0, 8, 30));
+const poolLabel = createSign('Piscina', new THREE.Vector3(45, 5, 45));
+const northLabel = createSign('Norte', new THREE.Vector3(0, 20, 50));
+const southLabel = createSign('Sur', new THREE.Vector3(0, 20, -50));
+const eastLabel = createSign('Este', new THREE.Vector3(50, 20, 0));
+const westLabel = createSign('Oeste', new THREE.Vector3(-50, 20, 0));
+const labels = [buildingLabel, tennisLabel, padelLabel, poolLabel];
+const cardinalLabels = [northLabel, southLabel, eastLabel, westLabel];
+scene.add(buildingLabel, tennisLabel, padelLabel, poolLabel, northLabel, southLabel, eastLabel, westLabel);
+
+// Definición de createSign
+function createSign(text, position) {
     const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 64;
     const context = canvas.getContext('2d');
-    context.font = '24px Arial';
+    context.fillStyle = '#000000';
+    context.fillRect(0, 0, 256, 64);
+    context.font = '30px Arial';
     context.fillStyle = 'white';
-    context.fillText(text, 0, 24);
+    context.textAlign = 'center';
+    context.fillText(text, 128, 40);
     const texture = new THREE.Texture(canvas);
     texture.needsUpdate = true;
     const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
     const sprite = new THREE.Sprite(spriteMaterial);
-    sprite.scale.set(10, 5, 1);
+    sprite.scale.set(20, 5, 1);
     sprite.position.copy(position);
     return sprite;
 }
-
-const buildingLabel = createLabel('Hotel 4*', new THREE.Vector3(0, 21, -30));
-const tennisLabel = createLabel('Pistas de Tenis', new THREE.Vector3(-8, 12, 10));
-const padelLabel = createLabel('Pistas de Pádel', new THREE.Vector3(0, 8, 30));
-const poolLabel = createLabel('Piscina', new THREE.Vector3(45, 5, 45));
-const labels = [buildingLabel, tennisLabel, padelLabel, poolLabel];
-scene.add(buildingLabel, tennisLabel, padelLabel, poolLabel);
 
 // Contorno para resaltar selección
 const outlineMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00, side: THREE.BackSide });
@@ -663,7 +779,7 @@ let outlineMesh = null;
 
 function createOutline(object) {
     if (outlineMesh) scene.remove(outlineMesh);
-    const geometry = object.geometry ? object.geometry.clone() : new THREE.BoxGeometry(1, 1, 1); // Para grupos
+    const geometry = object.geometry ? object.geometry.clone() : new THREE.BoxGeometry(1, 1, 1);
     outlineMesh = new THREE.Mesh(geometry, outlineMaterial);
     outlineMesh.position.copy(object.position);
     outlineMesh.scale.multiplyScalar(1.05);
@@ -680,29 +796,18 @@ controls.maxDistance = 200;
 
 camera.position.set(100, 50, 100);
 
-// Raycaster para interacción
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-const interactiveObjects = [
-    building, ...tennisCourts, ...padelCourts, pool,
-    ...chairs, table, plant,
-    ...bedsWest, ...bedsEast, ...headboardsWest, ...headboardsEast,
-    ...nightstandsWestLeft, ...nightstandsWestRight, ...nightstandsEastLeft, ...nightstandsEastRight
-];
-const detailsDiv = document.getElementById('details');
-const dayNightDiv = document.getElementById('dayNight');
-
 function onMouseMove(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(interactiveObjects);
     labels.forEach(label => label.visible = false);
+    cardinalLabels.forEach(label => label.visible = true);
     if (intersects.length > 0) {
         const intersected = intersects[0].object;
         if (intersected === building) buildingLabel.visible = true;
-        else if (tennisCourts.includes(intersected)) tennisLabel.visible = true;
-        else if (padelCourts.includes(intersected)) padelLabel.visible = true;
+        else if (tennisCourts.includes(interacted)) tennisLabel.visible = true;
+        else if (padelCourts.includes(interacted)) padelLabel.visible = true;
         else if (intersected === pool) poolLabel.visible = true;
     }
 }
@@ -760,8 +865,6 @@ function onMouseClick(event) {
             detailsDiv.innerHTML = intersected.userData.info;
             targetPosition = intersected.position.clone().add(new THREE.Vector3(5, 5, 5));
             targetLookAt = intersected.position.clone();
-            if (clickSound.isPlaying) clickSound.stop();
-            clickSound.play();
         }
         smoothZoom(targetPosition, targetLookAt, 1);
     } else {
@@ -785,24 +888,26 @@ window.addEventListener('dblclick', onDoubleClick);
 
 // Interfaz
 let isDay = true;
+let isSummer = true;
 const toggleLightButton = document.getElementById('toggleLight');
 toggleLightButton.addEventListener('click', () => {
     isDay = !isDay;
+    skyMaterial.uniforms.isDay.value = isDay ? 1.0 : 0.0;
     if (isDay) {
-        scene.background = new THREE.Color(0x87CEEB);
-        directionalLight.position.set(40, 50, 40);
-        directionalLight.intensity = 1.0;
+        directionalLight.intensity = 2.0;
         ambientLight.intensity = 0.8;
         nightLight.intensity = 0;
         volumetricLight.intensity = 0;
         interiorLight.intensity = 0.5;
         lamp.material.color.set(0xFFD700);
         dayNightDiv.textContent = 'Día';
-        if (nightSound.isPlaying) nightSound.stop();
-        if (!daySound.isPlaying) daySound.play();
+        streetLights.forEach(light => light.intensity = 0);
+        if (isSummer) {
+            directionalLight.position.set(50, 70, 50);
+        } else {
+            directionalLight.position.set(50, 30, 50);
+        }
     } else {
-        scene.background = new THREE.Color(0x191970);
-        directionalLight.position.set(-40, 50, -40);
         directionalLight.intensity = 0.5;
         ambientLight.intensity = 0.3;
         nightLight.intensity = 1;
@@ -810,21 +915,46 @@ toggleLightButton.addEventListener('click', () => {
         interiorLight.intensity = 0.8;
         lamp.material.color.set(0xFFA500);
         dayNightDiv.textContent = 'Noche';
-        if (daySound.isPlaying) daySound.stop();
-        if (!nightSound.isPlaying) nightSound.play();
+        streetLights.forEach(light => light.intensity = 1);
+        if (isSummer) {
+            directionalLight.position.set(-50, 70, -50);
+        } else {
+            directionalLight.position.set(-50, 30, -50);
+        }
+    }
+});
+
+document.getElementById('toggleRain').addEventListener('click', () => {
+    isSummer = !isSummer;
+    if (isDay) {
+        if (isSummer) {
+            directionalLight.position.set(50, 70, 50);
+            detailsDiv.innerHTML = 'Verano: Sol alto';
+        } else {
+            directionalLight.position.set(50, 30, 50);
+            detailsDiv.innerHTML = 'Invierno: Sol bajo';
+        }
+        detailsDiv.style.display = 'block';
+        setTimeout(() => { detailsDiv.style.display = 'none'; }, 2000);
+    } else {
+        if (isSummer) {
+            directionalLight.position.set(-50, 70, -50);
+            detailsDiv.innerHTML = 'Verano: Noche';
+        } else {
+            directionalLight.position.set(-50, 30, -50);
+            detailsDiv.innerHTML = 'Invierno: Noche';
+        }
+        detailsDiv.style.display = 'block';
+        setTimeout(() => { detailsDiv.style.display = 'none'; }, 2000);
     }
 });
 
 let isRaining = false;
-const toggleRainButton = document.getElementById('toggleRain');
-toggleRainButton.addEventListener('click', () => {
-    isRaining = !isRaining;
-    rain.visible = isRaining;
-    scene.background = isRaining ? new THREE.Color(0x666666) : (isDay ? new THREE.Color(0x87CEEB) : new THREE.Color(0x191970));
-});
-
 document.getElementById('resetRotation').addEventListener('click', () => {
     building.rotation.y = 0;
+    isRaining = !isRaining;
+    rain.visible = isRaining;
+    if (isRaining) skyMaterial.uniforms.isDay.value = 0.5; // Cielo grisáceo durante lluvia
 });
 
 document.getElementById('viewHotel').addEventListener('click', () => {
@@ -837,7 +967,6 @@ document.getElementById('viewPool').addEventListener('click', () => {
     smoothZoom(new THREE.Vector3(65, 20, 65), new THREE.Vector3(45, 0, 45), 1);
 });
 
-// Personalización de colores
 document.getElementById('colorChairsRed').addEventListener('click', () => {
     chairs.forEach(chair => {
         chair.children.forEach(child => child.material.color.set(0xFF0000));
@@ -861,7 +990,10 @@ document.getElementById('colorBedsPurple').addEventListener('click', () => {
 let time = 0;
 function animate() {
     requestAnimationFrame(animate);
-    time += 0.05;
+    time += 0.01;
+
+    skyMaterial.uniforms.time.value = time;
+    poolMaterial.uniforms.time.value = time;
 
     if (isRaining) {
         const rainPositions = rain.geometry.attributes.position.array;
@@ -879,6 +1011,19 @@ function animate() {
         bush.position.x = -60 + i * 24 + Math.cos(time + i) * 0.2;
     });
 
+    loungeChairs.forEach((chair, i) => {
+        chair.position.y = 0.1 + Math.sin(time + i) * 0.05; // Movimiento sutil
+    });
+
+    umbrellas.forEach((umbrella, i) => {
+        const cover = umbrella.children[1]; // La cubierta es el segundo hijo
+        cover.position.x = Math.sin(time + i) * 0.1; // Movimiento oscilante
+    });
+
+    smallTables.forEach((table, i) => {
+        table.position.y = 0.25 + Math.sin(time + i + 2) * 0.03; // Movimiento sutil, desfasado
+    });
+
     if (!isDay) {
         volumetricLight.intensity = 0.5 + Math.sin(time) * 0.2;
         interiorLight.intensity = 0.8 + Math.cos(time) * 0.2;
@@ -886,10 +1031,6 @@ function animate() {
     } else {
         directionalLight.shadow.bias = -0.00005;
     }
-
-    poolMaterial.map.offset.x += 0.01 * Math.sin(time);
-    poolMaterial.map.offset.y += 0.005 * Math.cos(time);
-    poolMaterial.map.needsUpdate = true;
 
     tennisNets.forEach(net => {
         net.position.y = 0.615 + Math.sin(time) * 0.05;
