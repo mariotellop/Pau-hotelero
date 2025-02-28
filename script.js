@@ -3,6 +3,8 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 // Fondo de cielo
@@ -13,17 +15,35 @@ const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
 scene.add(ambientLight);
 const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
 directionalLight.position.set(100, 50, 50);
+directionalLight.castShadow = true;
+directionalLight.shadow.mapSize.width = 2048;
+directionalLight.shadow.mapSize.height = 2048;
+directionalLight.shadow.camera.near = 0.5;
+directionalLight.shadow.camera.far = 500;
+directionalLight.shadow.bias = -0.0001; // Suaviza sombras
 scene.add(directionalLight);
+
+const nightLight = new THREE.PointLight(0xffff99, 0, 50);
+nightLight.position.set(0, 15, -30);
+nightLight.castShadow = true;
+scene.add(nightLight);
+
+const volumetricLight = new THREE.SpotLight(0xffff99, 0, 100, Math.PI / 6, 0.5);
+volumetricLight.position.set(0, 20, -30);
+volumetricLight.castShadow = true;
+volumetricLight.shadow.mapSize.width = 1024;
+volumetricLight.shadow.mapSize.height = 1024;
+scene.add(volumetricLight);
 
 // Cargador de texturas
 const textureLoader = new THREE.TextureLoader();
 
 // Terreno
 const terrainGeometry = new THREE.PlaneGeometry(120, 100);
-const terrainTexture = textureLoader.load('https://threejs.org/examples/textures/terrain/grasslight-big.jpg');
-const terrainMaterial = new THREE.MeshLambertMaterial({ map: terrainTexture });
+const terrainMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
 const terrain = new THREE.Mesh(terrainGeometry, terrainMaterial);
 terrain.rotation.x = -Math.PI / 2;
+terrain.receiveShadow = true;
 scene.add(terrain);
 
 // Edificio Principal
@@ -31,94 +51,230 @@ const buildingGeometry = new THREE.BoxGeometry(70, 12, 55);
 const buildingTexture = textureLoader.load('https://threejs.org/examples/textures/brick_diffuse.jpg');
 const buildingMaterial = new THREE.MeshLambertMaterial({ map: buildingTexture });
 const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
-building.position.set(0, 6, -20);
+building.position.set(0, 6, -30); // Norte
+building.castShadow = true;
+building.receiveShadow = true;
 scene.add(building);
 
-// Ventanas
+// Paredes con ventanas
 const windowGeometry = new THREE.BoxGeometry(3, 2, 0.1);
-const windowTexture = textureLoader.load('https://threejs.org/examples/textures/window.jpg');
-const windowMaterial = new THREE.MeshLambertMaterial({ map: windowTexture });
+const windowMaterial = new THREE.MeshLambertMaterial({ color: 0x4682B4 });
 for (let i = 0; i < 10; i++) {
-    const windowMesh = new THREE.Mesh(windowGeometry, windowMaterial);
-    windowMesh.position.set(-32 + i * 7, 2, -47.5);
-    scene.add(windowMesh);
+    const windowMeshWest = new THREE.Mesh(windowGeometry, windowMaterial);
+    windowMeshWest.position.set(-32 + i * 7, 2, -57.5);
+    windowMeshWest.castShadow = true;
+    scene.add(windowMeshWest);
+    const windowMeshEast = new THREE.Mesh(windowGeometry, windowMaterial);
+    windowMeshEast.position.set(-32 + i * 7, 2, -2.5);
+    windowMeshEast.rotation.y = Math.PI;
+    windowMeshEast.castShadow = true;
+    scene.add(windowMeshEast);
 }
 for (let i = 0; i < 7; i++) {
-    const windowP1 = new THREE.Mesh(windowGeometry, windowMaterial);
-    windowP1.position.set(-24 + i * 7, 6, -47.5);
-    scene.add(windowP1);
-    const windowP2 = new THREE.Mesh(windowGeometry, windowMaterial);
-    windowP2.position.set(-24 + i * 7, 10, -47.5);
-    scene.add(windowP2);
+    const windowP1West = new THREE.Mesh(windowGeometry, windowMaterial);
+    windowP1West.position.set(-24 + i * 7, 6, -57.5);
+    windowP1West.castShadow = true;
+    scene.add(windowP1West);
+    const windowP2West = new THREE.Mesh(windowGeometry, windowMaterial);
+    windowP2West.position.set(-24 + i * 7, 10, -57.5);
+    windowP2West.castShadow = true;
+    scene.add(windowP2West);
+    const windowP1East = new THREE.Mesh(windowGeometry, windowMaterial);
+    windowP1East.position.set(-24 + i * 7, 6, -2.5);
+    windowP1East.rotation.y = Math.PI;
+    windowP1East.castShadow = true;
+    scene.add(windowP1East);
+    const windowP2East = new THREE.Mesh(windowGeometry, windowMaterial);
+    windowP2East.position.set(-24 + i * 7, 10, -2.5);
+    windowP2East.rotation.y = Math.PI;
+    windowP2East.castShadow = true;
+    scene.add(windowP2East);
 }
 
 // Azotea
 const solarGeometry = new THREE.BoxGeometry(70, 0.2, 40);
-const solarTexture = textureLoader.load('https://threejs.org/examples/textures/solar_panel.jpg');
-const solarMaterial = new THREE.MeshLambertMaterial({ map: solarTexture });
+const solarMaterial = new THREE.MeshLambertMaterial({ color: 0x1C2526 });
 const solarPanels = new THREE.Mesh(solarGeometry, solarMaterial);
-solarPanels.position.set(0, 12.1, -20);
+solarPanels.position.set(0, 12.1, -30);
+solarPanels.castShadow = true;
 scene.add(solarPanels);
 
 const terraceGeometry = new THREE.BoxGeometry(20, 0.1, 20);
-const terraceTexture = textureLoader.load('https://threejs.org/examples/textures/wood.jpg');
-const terraceMaterial = new THREE.MeshLambertMaterial({ map: terraceTexture });
+const terraceMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
 const terrace = new THREE.Mesh(terraceGeometry, terraceMaterial);
-terrace.position.set(25, 12.05, -40);
+terrace.position.set(25, 12.05, -45);
+terrace.castShadow = true;
 scene.add(terrace);
 
 // Pistas de Tenis
 const tennisGeometry = new THREE.BoxGeometry(36, 0.5, 18);
 const tennisTexture = textureLoader.load('https://threejs.org/examples/textures/terrain/clay.jpg');
-const tennisMaterial = new THREE.MeshLambertMaterial({ map: tennisTexture });
+const tennisMaterial = new THREE.MeshLambertMaterial({ map: tennisTexture, color: 0xFF4500 });
+const tennisCourts = [];
 for (let i = 0; i < 3; i++) {
     const tennisCourt = new THREE.Mesh(tennisGeometry, tennisMaterial);
-    tennisCourt.position.set(-36 + i * 40, 0.25, 30);
+    tennisCourt.position.set(-48 + i * 40, 0.25, 10);
+    tennisCourt.castShadow = true;
+    tennisCourt.receiveShadow = true;
     scene.add(tennisCourt);
-    const roofGeometry = new THREE.BoxGeometry(36, 0.2, 18);
+    tennisCourts.push(tennisCourt);
+    const roofGeometry = new THREE.BoxGeometry(38, 0.2, 20);
     const roofMaterial = new THREE.MeshLambertMaterial({ color: 0x808080 });
     const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-    roof.position.set(-36 + i * 40, 10, 30);
+    roof.position.set(-48 + i * 40, 10, 10);
+    roof.castShadow = true;
     scene.add(roof);
 }
 
 // Pistas de Pádel
 const padelGeometry = new THREE.BoxGeometry(20, 0.5, 10);
 const padelTexture = textureLoader.load('https://threejs.org/examples/textures/terrain/grass.jpg');
-const padelMaterial = new THREE.MeshLambertMaterial({ map: padelTexture });
+const padelMaterial = new THREE.MeshLambertMaterial({ map: padelTexture, color: 0x32CD32 });
+const padelCourts = [];
 for (let i = 0; i < 3; i++) {
     const padelCourt = new THREE.Mesh(padelGeometry, padelMaterial);
-    padelCourt.position.set(-20 + i * 25, 0.25, 45);
+    padelCourt.position.set(-30 + i * 25, 0.25, 30);
+    padelCourt.castShadow = true;
+    padelCourt.receiveShadow = true;
     scene.add(padelCourt);
+    padelCourts.push(padelCourt);
+    const roofGeometry = new THREE.BoxGeometry(22, 0.2, 12);
+    const roofMaterial = new THREE.MeshLambertMaterial({ color: 0x808080 });
+    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+    roof.position.set(-30 + i * 25, 8, 30);
+    roof.castShadow = true;
+    scene.add(roof);
 }
 
 // Piscina Exterior
 const poolGeometry = new THREE.BoxGeometry(25, 0.1, 25);
 const poolTexture = textureLoader.load('https://threejs.org/examples/textures/water.jpg');
-const poolMaterial = new THREE.MeshLambertMaterial({ map: poolTexture });
+const poolMaterial = new THREE.MeshPhongMaterial({
+    map: poolTexture,
+    color: 0x1E90FF,
+    shininess: 150,
+    specular: 0xFFFFFF,
+    envMap: scene.background // Reflejo del cielo
+});
 const pool = new THREE.Mesh(poolGeometry, poolMaterial);
 pool.position.set(40, 0.05, 40);
+pool.receiveShadow = true;
 scene.add(pool);
 
-// Parking
+const reflectionGeometry = new THREE.PlaneGeometry(25, 25);
+const reflectionMaterial = new THREE.MeshPhongMaterial({
+    color: 0x1E90FF,
+    opacity: 0.6,
+    transparent: true,
+    shininess: 150,
+    envMap: scene.background
+});
+const reflection = new THREE.Mesh(reflectionGeometry, reflectionMaterial);
+reflection.rotation.x = -Math.PI / 2;
+reflection.position.set(40, 0.005, 40);
+reflection.receiveShadow = true;
+scene.add(reflection);
+
+// Parking con autos
 const parkingGeometry = new THREE.BoxGeometry(50, 0.1, 50);
-const parkingTexture = textureLoader.load('https://threejs.org/examples/textures/terrain/asphalt.jpg');
-const parkingMaterial = new THREE.MeshLambertMaterial({ map: parkingTexture });
+const parkingMaterial = new THREE.MeshLambertMaterial({ color: 0x696969 });
 const parking = new THREE.Mesh(parkingGeometry, parkingMaterial);
 parking.position.set(0, 0.05, -45);
+parking.receiveShadow = true;
 scene.add(parking);
 
-// Jardines
+const carGeometry = new THREE.BoxGeometry(5, 1, 2);
+const carMaterial = new THREE.MeshLambertMaterial({ color: 0xFF0000 });
+const cars = [];
+for (let i = 0; i < 5; i++) {
+    const car = new THREE.Mesh(carGeometry, carMaterial);
+    car.position.set(-20 + i * 10, 0.5, -45);
+    car.castShadow = true;
+    scene.add(car);
+    cars.push(car);
+}
+
+// Jardines con arbustos
 const gardenGeometry = new THREE.BoxGeometry(120, 0.1, 20);
-const gardenMaterial = new THREE.MeshLambertMaterial({ map: terrainTexture });
+const gardenMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
 const gardenNorth = new THREE.Mesh(gardenGeometry, gardenMaterial);
-gardenNorth.position.set(0, 0.05, 40);
+gardenNorth.position.set(0, 0.05, 45);
+gardenNorth.receiveShadow = true;
 scene.add(gardenNorth);
 const gardenSouth = new THREE.Mesh(gardenGeometry, gardenMaterial);
 gardenSouth.position.set(0, 0.05, -40);
+gardenSouth.receiveShadow = true;
 scene.add(gardenSouth);
 
-// Etiquetas (Sprites)
+const bushGeometry = new THREE.SphereGeometry(1, 16, 16);
+const bushMaterial = new THREE.MeshLambertMaterial({ color: 0x006400 });
+const bushesNorth = [];
+const bushesSouth = [];
+for (let i = 0; i < 10; i++) {
+    const bushNorth = new THREE.Mesh(bushGeometry, bushMaterial);
+    bushNorth.position.set(-50 + i * 10, 0.5, 50);
+    bushNorth.castShadow = true;
+    scene.add(bushNorth);
+    bushesNorth.push(bushNorth);
+    const bushSouth = new THREE.Mesh(bushGeometry, bushMaterial);
+    bushSouth.position.set(-50 + i * 10, 0.5, -35);
+    bushSouth.castShadow = true;
+    scene.add(bushSouth);
+    bushesSouth.push(bushSouth);
+}
+
+// Partículas (pájaros)
+const birdCount = 50;
+const birdsGeometry = new THREE.BufferGeometry();
+const birdPositions = new Float32Array(birdCount * 3);
+const birdVelocities = new Float32Array(birdCount * 3);
+for (let i = 0; i < birdCount; i++) {
+    birdPositions[i * 3] = Math.random() * 120 - 60;
+    birdPositions[i * 3 + 1] = Math.random() * 20 + 5;
+    birdPositions[i * 3 + 2] = Math.random() * 100 - 50;
+    birdVelocities[i * 3] = (Math.random() - 0.5) * 0.1;
+    birdVelocities[i * 3 + 1] = (Math.random() - 0.5) * 0.05;
+    birdVelocities[i * 3 + 2] = (Math.random() - 0.5) * 0.1;
+}
+birdsGeometry.setAttribute('position', new THREE.BufferAttribute(birdPositions, 3));
+const birdMaterial = new THREE.PointsMaterial({ color: 0x000000, size: 0.5 });
+const birds = new THREE.Points(birdsGeometry, birdMaterial);
+scene.add(birds);
+
+// Partículas (polvo)
+const dustCount = 200;
+const dustGeometry = new THREE.BufferGeometry();
+const dustPositions = new Float32Array(dustCount * 3);
+const dustVelocities = new Float32Array(dustCount * 3);
+for (let i = 0; i < dustCount; i++) {
+    dustPositions[i * 3] = Math.random() * 120 - 60;
+    dustPositions[i * 3 + 1] = Math.random() * 10;
+    dustPositions[i * 3 + 2] = Math.random() * 100 - 50;
+    dustVelocities[i * 3] = (Math.random() - 0.5) * 0.05;
+    dustVelocities[i * 3 + 1] = (Math.random() - 0.5) * 0.02;
+    dustVelocities[i * 3 + 2] = (Math.random() - 0.5) * 0.05;
+}
+dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+const dustMaterial = new THREE.PointsMaterial({ color: 0xD3D3D3, size: 0.1, transparent: true, opacity: 0.5 });
+const dust = new THREE.Points(dustGeometry, dustMaterial);
+scene.add(dust);
+
+// Partículas (lluvia)
+const rainCount = 500;
+const rainGeometry = new THREE.BufferGeometry();
+const rainPositions = new Float32Array(rainCount * 3);
+for (let i = 0; i < rainCount; i++) {
+    rainPositions[i * 3] = Math.random() * 120 - 60;
+    rainPositions[i * 3 + 1] = Math.random() * 50;
+    rainPositions[i * 3 + 2] = Math.random() * 100 - 50;
+}
+rainGeometry.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+const rainMaterial = new THREE.PointsMaterial({ color: 0xAAAAAA, size: 0.2, transparent: true });
+const rain = new THREE.Points(rainGeometry, rainMaterial);
+rain.visible = false;
+scene.add(rain);
+
+// Etiquetas
 function createLabel(text, position) {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -134,10 +290,11 @@ function createLabel(text, position) {
     return sprite;
 }
 
-const buildingLabel = createLabel('Hotel 4*', new THREE.Vector3(0, 15, -20));
-const tennisLabel = createLabel('Pistas de Tenis', new THREE.Vector3(0, 12, 30));
-const padelLabel = createLabel('Pistas de Pádel', new THREE.Vector3(0, 8, 45));
+const buildingLabel = createLabel('Hotel 4*', new THREE.Vector3(0, 15, -30));
+const tennisLabel = createLabel('Pistas de Tenis', new THREE.Vector3(-8, 12, 10));
+const padelLabel = createLabel('Pistas de Pádel', new THREE.Vector3(0, 8, 30));
 const poolLabel = createLabel('Piscina', new THREE.Vector3(40, 5, 40));
+const labels = [buildingLabel, tennisLabel, padelLabel, poolLabel];
 scene.add(buildingLabel, tennisLabel, padelLabel, poolLabel);
 
 // Controles de cámara
@@ -153,8 +310,8 @@ camera.position.set(100, 50, 100);
 // Raycaster para interacción
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-const objects = [building, ...scene.children.filter(child => child.geometry === tennisGeometry || child.geometry === padelGeometry), pool];
-const labels = [buildingLabel, tennisLabel, padelLabel, poolLabel];
+const objects = [building, ...tennisCourts, ...padelCourts, pool];
+const detailsDiv = document.getElementById('details');
 
 function onMouseMove(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -163,9 +320,166 @@ function onMouseMove(event) {
     const intersects = raycaster.intersectObjects(objects);
     labels.forEach(label => label.visible = false);
     if (intersects.length > 0) {
-        const intersected = intersects[0].object;
+        const intersected = intersects[0].object; // Corregido de 'interected'
         if (intersected === building) buildingLabel.visible = true;
-        else if (intersected.geometry === tennisGeometry) tennisLabel.visible = true;
-        else if (intersected.geometry === padelGeometry) padelLabel.visible = true;
+        else if (tennisCourts.includes(intersected)) tennisLabel.visible = true; // Corregido de 'interected'
+        else if (padelCourts.includes(intersected)) padelLabel.visible = true; // Corregido de 'interected'
         else if (intersected === pool) poolLabel.visible = true;
-    
+    }
+}
+window.addEventListener('mousemove', onMouseMove);
+
+function onMouseClick(event) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(objects);
+    if (intersects.length > 0) {
+        const intersected = intersects[0].object; // Corregido de 'interected'
+        detailsDiv.style.display = 'block';
+        let targetPosition;
+        if (intersected === building) {
+            detailsDiv.innerHTML = 'Hotel 4*: 70 habitaciones, spa, gimnasio.<br>Superficie: 2,450 m²';
+            targetPosition = new THREE.Vector3(0, 6, -30);
+        } else if (tennisCourts.includes(intersected)) { // Corregido de 'interected'
+            detailsDiv.innerHTML = 'Pistas de Tenis: 3 cubiertas (+1 espacio).<br>Superficie: 1,950 m²';
+            targetPosition = new THREE.Vector3(-8, 0, 10);
+        } else if (padelCourts.includes(intersected)) { // Corregido de 'interected'
+            detailsDiv.innerHTML = 'Pistas de Pádel: 3 cubiertas (+1 espacio).<br>Superficie: 1,008 m²';
+            targetPosition = new THREE.Vector3(0, 0, 30);
+        } else if (intersected === pool) {
+            detailsDiv.innerHTML = 'Piscina Exterior: Borde infinito.<br>Superficie: 625 m²';
+            targetPosition = new THREE.Vector3(40, 0, 40);
+        }
+        const zoomDistance = 20;
+        const direction = targetPosition.clone().sub(camera.position).normalize();
+        camera.position.copy(targetPosition.clone().add(direction.multiplyScalar(-zoomDistance)));
+        controls.target.copy(targetPosition);
+    } else {
+        detailsDiv.style.display = 'none';
+    }
+}
+window.addEventListener('click', onMouseClick);
+
+function onDoubleClick(event) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects([building]); // Solo el edificio
+    if (intersects.length > 0) {
+        building.rotation.y += Math.PI / 2; // Rotar 90 grados
+    }
+}
+window.addEventListener('dblclick', onDoubleClick);
+
+// Interfaz
+let isDay = true;
+const toggleLightButton = document.getElementById('toggleLight');
+toggleLightButton.addEventListener('click', () => {
+    isDay = !isDay;
+    if (isDay) {
+        scene.background = new THREE.Color(0x87CEEB);
+        directionalLight.position.set(100, 50, 50);
+        directionalLight.intensity = 0.8;
+        ambientLight.intensity = 0.6;
+        nightLight.intensity = 0;
+        volumetricLight.intensity = 0;
+    } else {
+        scene.background = new THREE.Color(0x191970);
+        directionalLight.position.set(-100, 50, -50);
+        directionalLight.intensity = 0.3;
+        ambientLight.intensity = 0.2;
+        nightLight.intensity = 1;
+        volumetricLight.intensity = 0.5 + Math.sin(time) * 0.2;
+    }
+});
+
+let isRaining = false;
+const toggleRainButton = document.getElementById('toggleRain');
+toggleRainButton.addEventListener('click', () => {
+    isRaining = !isRaining;
+    rain.visible = isRaining;
+    scene.background = isRaining ? new THREE.Color(0x666666) : (isDay ? new THREE.Color(0x87CEEB) : new THREE.Color(0x191970));
+});
+
+document.getElementById('viewHotel').addEventListener('click', () => {
+    camera.position.set(50, 20, -50);
+    controls.target.set(0, 6, -30);
+});
+document.getElementById('viewCourts').addEventListener('click', () => {
+    camera.position.set(0, 20, 50);
+    controls.target.set(0, 0, 20);
+});
+document.getElementById('viewPool').addEventListener('click', () => {
+    camera.position.set(60, 20, 60);
+    controls.target.set(40, 0, 40);
+});
+
+// Animación
+let time = 0;
+function animate() {
+    requestAnimationFrame(animate);
+    time += 0.05;
+
+    // Movimiento de autos
+    cars.forEach((car, i) => {
+        car.position.x = -20 + i * 10 + Math.sin(time + i) * 2;
+    });
+
+    // Animar pájaros
+    const birdPositions = birds.geometry.attributes.position.array;
+    for (let i = 0; i < birdCount; i++) {
+        birdPositions[i * 3] += birdVelocities[i * 3];
+        birdPositions[i * 3 + 1] += birdVelocities[i * 3 + 1];
+        birdPositions[i * 3 + 2] += birdVelocities[i * 3 + 2];
+        if (birdPositions[i * 3] > 60 || birdPositions[i * 3] < -60) birdVelocities[i * 3] *= -1;
+        if (birdPositions[i * 3 + 1] > 25 || birdPositions[i * 3 + 1] < 5) birdVelocities[i * 3 + 1] *= -1;
+        if (birdPositions[i * 3 + 2] > 50 || birdPositions[i * 3 + 2] < -50) birdVelocities[i * 3 + 2] *= -1;
+    }
+    birds.geometry.attributes.position.needsUpdate = true;
+
+    // Animar polvo
+    const dustPositions = dust.geometry.attributes.position.array;
+    for (let i = 0; i < dustCount; i++) {
+        dustPositions[i * 3] += dustVelocities[i * 3];
+        dustPositions[i * 3 + 1] += dustVelocities[i * 3 + 1];
+        dustPositions[i * 3 + 2] += dustVelocities[i * 3 + 2];
+        if (dustPositions[i * 3] > 60 || dustPositions[i * 3] < -60) dustVelocities[i * 3] *= -1;
+        if (dustPositions[i * 3 + 1] > 10 || dustPositions[i * 3 + 1] < 0) dustVelocities[i * 3 + 1] *= -1;
+        if (dustPositions[i * 3 + 2] > 50 || dustPositions[i * 3 + 2] < -50) dustVelocities[i * 3 + 2] *= -1;
+    }
+    dust.geometry.attributes.position.needsUpdate = true;
+
+    // Animar lluvia
+    if (isRaining) {
+        const rainPositions = rain.geometry.attributes.position.array;
+        for (let i = 0; i < rainCount; i++) {
+            rainPositions[i * 3 + 1] -= 0.5;
+            if (rainPositions[i * 3 + 1] < 0) rainPositions[i * 3 + 1] = 50;
+        }
+        rain.geometry.attributes.position.needsUpdate = true;
+    }
+
+    // Animar arbustos
+    bushesNorth.forEach((bush, i) => {
+        bush.position.x = -50 + i * 10 + Math.sin(time + i) * 0.2;
+    });
+    bushesSouth.forEach((bush, i) => {
+        bush.position.x = -50 + i * 10 + Math.cos(time + i) * 0.2;
+    });
+
+    // Luces dinámicas
+    if (!isDay) {
+        volumetricLight.intensity = 0.5 + Math.sin(time) * 0.2;
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
