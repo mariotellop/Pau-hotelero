@@ -20,7 +20,7 @@ directionalLight.shadow.mapSize.width = 2048;
 directionalLight.shadow.mapSize.height = 2048;
 directionalLight.shadow.camera.near = 0.5;
 directionalLight.shadow.camera.far = 500;
-directionalLight.shadow.bias = -0.00005; // Ajustado para sombras más realistas
+directionalLight.shadow.bias = -0.00005;
 scene.add(directionalLight);
 
 const nightLight = new THREE.PointLight(0xffff99, 0, 50);
@@ -39,6 +39,31 @@ const interiorLight = new THREE.PointLight(0xFFFFE0, 0.5, 50);
 interiorLight.position.set(0, 14, -30);
 interiorLight.castShadow = true;
 scene.add(interiorLight);
+
+// Sonidos
+const listener = new THREE.AudioListener();
+camera.add(listener);
+
+const clickSound = new THREE.Audio(listener);
+const audioLoader = new THREE.AudioLoader();
+audioLoader.load('https://threejs.org/examples/sounds/click.mp3', function(buffer) {
+    clickSound.setBuffer(buffer);
+    clickSound.setVolume(0.5);
+});
+
+const daySound = new THREE.Audio(listener);
+audioLoader.load('https://threejs.org/examples/sounds/birdsong.mp3', function(buffer) {
+    daySound.setBuffer(buffer);
+    daySound.setLoop(true);
+    daySound.setVolume(0.3);
+});
+
+const nightSound = new THREE.Audio(listener);
+audioLoader.load('https://threejs.org/examples/sounds/cricket.mp3', function(buffer) {
+    nightSound.setBuffer(buffer);
+    nightSound.setLoop(true);
+    nightSound.setVolume(0.3);
+});
 
 // Función para crear texturas avanzadas con canvas
 function createTexture(color, pattern, type) {
@@ -160,36 +185,49 @@ lamp.position.set(0, 5, -10);
 lamp.castShadow = true;
 scene.add(lamp);
 
-// Detalles interiores en el lobby: Sillas (clicables)
-const chairGeometry = new THREE.BoxGeometry(1.5, 2, 1.5);
+// Detalles interiores en el lobby: Sillas detalladas (clicables)
+const chairSeatGeometry = new THREE.BoxGeometry(1.5, 0.5, 1.5);
+const chairBackGeometry = new THREE.BoxGeometry(1.5, 1.5, 0.2);
+const chairLegGeometry = new THREE.BoxGeometry(0.2, 1.5, 0.2);
 const chairMaterial = new THREE.MeshLambertMaterial({ color: 0x8A2BE2 });
-const chair1 = new THREE.Mesh(chairGeometry, chairMaterial);
-chair1.position.set(-2, 1, -12);
-chair1.castShadow = true;
-chair1.receiveShadow = true;
-chair1.userData = { info: 'Silla morada del lobby' };
-scene.add(chair1);
+const chairs = [];
 
-const chair2 = new THREE.Mesh(chairGeometry, chairMaterial);
-chair2.position.set(2, 1, -12);
-chair2.castShadow = true;
-chair2.receiveShadow = true;
-chair2.userData = { info: 'Silla morada del lobby' };
-scene.add(chair2);
+function createChair(x, z) {
+    const chairGroup = new THREE.Group();
+    const seat = new THREE.Mesh(chairSeatGeometry, chairMaterial);
+    seat.position.set(0, 0.75, 0);
+    chairGroup.add(seat);
 
-const chair3 = new THREE.Mesh(chairGeometry, chairMaterial);
-chair3.position.set(-2, 1, -8);
-chair3.castShadow = true;
-chair3.receiveShadow = true;
-chair3.userData = { info: 'Silla morada del lobby' };
-scene.add(chair3);
+    const back = new THREE.Mesh(chairBackGeometry, chairMaterial);
+    back.position.set(0, 1.5, -0.65);
+    chairGroup.add(back);
 
-const chair4 = new THREE.Mesh(chairGeometry, chairMaterial);
-chair4.position.set(2, 1, -8);
-chair4.castShadow = true;
-chair4.receiveShadow = true;
-chair4.userData = { info: 'Silla morada del lobby' };
-scene.add(chair4);
+    const leg1 = new THREE.Mesh(chairLegGeometry, chairMaterial);
+    leg1.position.set(-0.65, 0.25, -0.65);
+    chairGroup.add(leg1);
+    const leg2 = new THREE.Mesh(chairLegGeometry, chairMaterial);
+    leg2.position.set(0.65, 0.25, -0.65);
+    chairGroup.add(leg2);
+    const leg3 = new THREE.Mesh(chairLegGeometry, chairMaterial);
+    leg3.position.set(-0.65, 0.25, 0.65);
+    chairGroup.add(leg3);
+    const leg4 = new THREE.Mesh(chairLegGeometry, chairMaterial);
+    leg4.position.set(0.65, 0.25, 0.65);
+    chairGroup.add(leg4);
+
+    chairGroup.position.set(x, 0, z);
+    chairGroup.castShadow = true;
+    chairGroup.receiveShadow = true;
+    chairGroup.userData = { info: 'Silla detallada del lobby' };
+    scene.add(chairGroup);
+    chairs.push(chairGroup);
+    return chairGroup;
+}
+
+createChair(-2, -12);
+createChair(2, -12);
+createChair(-2, -8);
+createChair(2, -8);
 
 // Detalles interiores en el lobby: Mesa (clicable)
 const tableGeometry = new THREE.BoxGeometry(4, 1, 2);
@@ -242,7 +280,6 @@ const headboardMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
 const nightstandMaterial = new THREE.MeshLambertMaterial({ color: 0xD2691E });
 const bedsWest = [], bedsEast = [], headboardsWest = [], headboardsEast = [], nightstandsWestLeft = [], nightstandsWestRight = [], nightstandsEastLeft = [], nightstandsEastRight = [];
 for (let i = 0; i < 4; i++) {
-    // Camas oeste (clicables)
     const bedGeometryWest = new THREE.BoxGeometry(5, 1, 10);
     const bedWest = new THREE.Mesh(bedGeometryWest, bedMaterial);
     bedWest.position.set(-25 + i * 15, 6.5, -40);
@@ -278,7 +315,6 @@ for (let i = 0; i < 4; i++) {
     scene.add(nightstandWestRight);
     nightstandsWestRight.push(nightstandWestRight);
 
-    // Camas este (clicables)
     const bedGeometryEast = new THREE.BoxGeometry(5, 1, 10);
     const bedEast = new THREE.Mesh(bedGeometryEast, bedMaterial);
     bedEast.position.set(25 - i * 15, 6.5, -40);
@@ -627,7 +663,7 @@ let outlineMesh = null;
 
 function createOutline(object) {
     if (outlineMesh) scene.remove(outlineMesh);
-    const geometry = object.geometry.clone();
+    const geometry = object.geometry ? object.geometry.clone() : new THREE.BoxGeometry(1, 1, 1); // Para grupos
     outlineMesh = new THREE.Mesh(geometry, outlineMaterial);
     outlineMesh.position.copy(object.position);
     outlineMesh.scale.multiplyScalar(1.05);
@@ -649,7 +685,7 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 const interactiveObjects = [
     building, ...tennisCourts, ...padelCourts, pool,
-    chair1, chair2, chair3, chair4, table, plant,
+    ...chairs, table, plant,
     ...bedsWest, ...bedsEast, ...headboardsWest, ...headboardsEast,
     ...nightstandsWestLeft, ...nightstandsWestRight, ...nightstandsEastLeft, ...nightstandsEastRight
 ];
@@ -721,9 +757,11 @@ function onMouseClick(event) {
             targetPosition = new THREE.Vector3(65, 20, 65);
             targetLookAt = new THREE.Vector3(45, 0, 45);
         } else if (intersected.userData && intersected.userData.info) {
-            detailsDiv.innerHTML = intersected.userData.info; // Información de muebles
+            detailsDiv.innerHTML = intersected.userData.info;
             targetPosition = intersected.position.clone().add(new THREE.Vector3(5, 5, 5));
             targetLookAt = intersected.position.clone();
+            if (clickSound.isPlaying) clickSound.stop();
+            clickSound.play();
         }
         smoothZoom(targetPosition, targetLookAt, 1);
     } else {
@@ -760,6 +798,8 @@ toggleLightButton.addEventListener('click', () => {
         interiorLight.intensity = 0.5;
         lamp.material.color.set(0xFFD700);
         dayNightDiv.textContent = 'Día';
+        if (nightSound.isPlaying) nightSound.stop();
+        if (!daySound.isPlaying) daySound.play();
     } else {
         scene.background = new THREE.Color(0x191970);
         directionalLight.position.set(-40, 50, -40);
@@ -770,6 +810,8 @@ toggleLightButton.addEventListener('click', () => {
         interiorLight.intensity = 0.8;
         lamp.material.color.set(0xFFA500);
         dayNightDiv.textContent = 'Noche';
+        if (daySound.isPlaying) daySound.stop();
+        if (!nightSound.isPlaying) nightSound.play();
     }
 });
 
@@ -795,13 +837,32 @@ document.getElementById('viewPool').addEventListener('click', () => {
     smoothZoom(new THREE.Vector3(65, 20, 65), new THREE.Vector3(45, 0, 45), 1);
 });
 
+// Personalización de colores
+document.getElementById('colorChairsRed').addEventListener('click', () => {
+    chairs.forEach(chair => {
+        chair.children.forEach(child => child.material.color.set(0xFF0000));
+    });
+});
+document.getElementById('colorChairsBlue').addEventListener('click', () => {
+    chairs.forEach(chair => {
+        chair.children.forEach(child => child.material.color.set(0x0000FF));
+    });
+});
+document.getElementById('colorBedsGreen').addEventListener('click', () => {
+    bedsWest.forEach(bed => bed.material.color.set(0x00FF00));
+    bedsEast.forEach(bed => bed.material.color.set(0x00FF00));
+});
+document.getElementById('colorBedsPurple').addEventListener('click', () => {
+    bedsWest.forEach(bed => bed.material.color.set(0x800080));
+    bedsEast.forEach(bed => bed.material.color.set(0x800080));
+});
+
 // Animación
 let time = 0;
 function animate() {
     requestAnimationFrame(animate);
     time += 0.05;
 
-    // Animación de lluvia
     if (isRaining) {
         const rainPositions = rain.geometry.attributes.position.array;
         for (let i = 0; i < rainCount; i++) {
@@ -811,7 +872,6 @@ function animate() {
         rain.geometry.attributes.position.needsUpdate = true;
     }
 
-    // Animación de arbustos
     bushesNorth.forEach((bush, i) => {
         bush.position.x = -50 + i * 20 + Math.sin(time + i) * 0.2;
     });
@@ -819,7 +879,6 @@ function animate() {
         bush.position.x = -60 + i * 24 + Math.cos(time + i) * 0.2;
     });
 
-    // Animación de luces dinámicas
     if (!isDay) {
         volumetricLight.intensity = 0.5 + Math.sin(time) * 0.2;
         interiorLight.intensity = 0.8 + Math.cos(time) * 0.2;
@@ -828,17 +887,15 @@ function animate() {
         directionalLight.shadow.bias = -0.00005;
     }
 
-    // Animación de agua en la piscina
     poolMaterial.map.offset.x += 0.01 * Math.sin(time);
     poolMaterial.map.offset.y += 0.005 * Math.cos(time);
     poolMaterial.map.needsUpdate = true;
 
-    // Animación de redes de tenis y pádel
     tennisNets.forEach(net => {
-        net.position.y = 0.615 + Math.sin(time) * 0.05; // Oscilación suave
+        net.position.y = 0.615 + Math.sin(time) * 0.05;
     });
     padelNets.forEach(net => {
-        net.position.y = 0.6 + Math.sin(time) * 0.03; // Oscilación más pequeña
+        net.position.y = 0.6 + Math.sin(time) * 0.03;
     });
 
     if (selectedObject && outlineMesh) {
