@@ -20,7 +20,7 @@ directionalLight.shadow.mapSize.width = 2048;
 directionalLight.shadow.mapSize.height = 2048;
 directionalLight.shadow.camera.near = 0.5;
 directionalLight.shadow.camera.far = 500;
-directionalLight.shadow.bias = -0.0001;
+directionalLight.shadow.bias = -0.00005; // Ajustado para sombras más realistas
 scene.add(directionalLight);
 
 const nightLight = new THREE.PointLight(0xffff99, 0, 50);
@@ -40,17 +40,73 @@ interiorLight.position.set(0, 14, -30);
 interiorLight.castShadow = true;
 scene.add(interiorLight);
 
-// Terreno
+// Función para crear texturas avanzadas con canvas
+function createTexture(color, pattern, type) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const context = canvas.getContext('2d');
+    
+    context.fillStyle = color;
+    context.fillRect(0, 0, 256, 256);
+
+    context.fillStyle = pattern;
+    if (type === 'water') {
+        for (let i = 0; i < 30; i++) {
+            const x = Math.random() * 256;
+            const y = Math.random() * 256;
+            context.beginPath();
+            context.arc(x, y, 8, 0, Math.PI * 2);
+            context.fill();
+        }
+    } else if (type === 'grass') {
+        for (let i = 0; i < 50; i++) {
+            const x = Math.random() * 256;
+            const y = Math.random() * 256;
+            context.fillRect(x, y, 4, 4);
+        }
+    } else if (type === 'brick') {
+        context.strokeStyle = pattern;
+        for (let i = 0; i < 256; i += 16) {
+            context.beginPath();
+            context.moveTo(0, i);
+            context.lineTo(256, i);
+            context.stroke();
+        }
+    } else {
+        for (let i = 0; i < 20; i++) {
+            const x = Math.random() * 256;
+            const y = Math.random() * 256;
+            context.beginPath();
+            context.arc(x, y, 5, 0, Math.PI * 2);
+            context.fill();
+        }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(4, 4);
+    return texture;
+}
+
+// Texturas
+const poolTexture = createTexture('#00BFFF', '#ADD8E6', 'water');
+const tennisTexture = createTexture('#FF4500', '#CD5C5C', 'generic');
+const padelTexture = createTexture('#32CD32', '#228B22', 'generic');
+const buildingTexture = createTexture('#D2B48C', '#DEB887', 'brick');
+const terrainTexture = createTexture('#228B22', '#006400', 'grass');
+
+// Terreno (con textura)
 const terrainGeometry = new THREE.PlaneGeometry(120, 100);
-const terrainMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
+const terrainMaterial = new THREE.MeshLambertMaterial({ map: terrainTexture });
 const terrain = new THREE.Mesh(terrainGeometry, terrainMaterial);
 terrain.rotation.x = -Math.PI / 2;
 terrain.receiveShadow = true;
 scene.add(terrain);
 
-// Edificio Principal con dos plantas
+// Edificio Principal con dos plantas (con textura)
 const buildingGeometry = new THREE.BoxGeometry(70, 18, 55);
-const buildingMaterial = new THREE.MeshLambertMaterial({ color: 0xD2B48C });
+const buildingMaterial = new THREE.MeshLambertMaterial({ map: buildingTexture });
 const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
 building.position.set(0, 9, -30);
 building.castShadow = true;
@@ -104,6 +160,57 @@ lamp.position.set(0, 5, -10);
 lamp.castShadow = true;
 scene.add(lamp);
 
+// Detalles interiores en el lobby: Sillas (clicables)
+const chairGeometry = new THREE.BoxGeometry(1.5, 2, 1.5);
+const chairMaterial = new THREE.MeshLambertMaterial({ color: 0x8A2BE2 });
+const chair1 = new THREE.Mesh(chairGeometry, chairMaterial);
+chair1.position.set(-2, 1, -12);
+chair1.castShadow = true;
+chair1.receiveShadow = true;
+chair1.userData = { info: 'Silla morada del lobby' };
+scene.add(chair1);
+
+const chair2 = new THREE.Mesh(chairGeometry, chairMaterial);
+chair2.position.set(2, 1, -12);
+chair2.castShadow = true;
+chair2.receiveShadow = true;
+chair2.userData = { info: 'Silla morada del lobby' };
+scene.add(chair2);
+
+const chair3 = new THREE.Mesh(chairGeometry, chairMaterial);
+chair3.position.set(-2, 1, -8);
+chair3.castShadow = true;
+chair3.receiveShadow = true;
+chair3.userData = { info: 'Silla morada del lobby' };
+scene.add(chair3);
+
+const chair4 = new THREE.Mesh(chairGeometry, chairMaterial);
+chair4.position.set(2, 1, -8);
+chair4.castShadow = true;
+chair4.receiveShadow = true;
+chair4.userData = { info: 'Silla morada del lobby' };
+scene.add(chair4);
+
+// Detalles interiores en el lobby: Mesa (clicable)
+const tableGeometry = new THREE.BoxGeometry(4, 1, 2);
+const tableMaterial = new THREE.MeshLambertMaterial({ color: 0xDEB887 });
+const table = new THREE.Mesh(tableGeometry, tableMaterial);
+table.position.set(0, 0.5, -10);
+table.castShadow = true;
+table.receiveShadow = true;
+table.userData = { info: 'Mesa burlywood del lobby' };
+scene.add(table);
+
+// Detalles interiores en el lobby: Planta decorativa (clicable)
+const plantGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 16);
+const plantMaterial = new THREE.MeshLambertMaterial({ color: 0x006400 });
+const plant = new THREE.Mesh(plantGeometry, plantMaterial);
+plant.position.set(-8, 1, -15);
+plant.castShadow = true;
+plant.receiveShadow = true;
+plant.userData = { info: 'Planta decorativa del lobby' };
+scene.add(plant);
+
 // Primera planta (habitaciones)
 const floorGeometry = new THREE.BoxGeometry(70, 0.2, 55);
 const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x808080 });
@@ -131,20 +238,79 @@ for (let i = 0; i < 5; i++) {
 }
 
 const bedMaterial = new THREE.MeshLambertMaterial({ color: 0x4682B4 });
+const headboardMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+const nightstandMaterial = new THREE.MeshLambertMaterial({ color: 0xD2691E });
+const bedsWest = [], bedsEast = [], headboardsWest = [], headboardsEast = [], nightstandsWestLeft = [], nightstandsWestRight = [], nightstandsEastLeft = [], nightstandsEastRight = [];
 for (let i = 0; i < 4; i++) {
+    // Camas oeste (clicables)
     const bedGeometryWest = new THREE.BoxGeometry(5, 1, 10);
     const bedWest = new THREE.Mesh(bedGeometryWest, bedMaterial);
     bedWest.position.set(-25 + i * 15, 6.5, -40);
     bedWest.receiveShadow = true;
     bedWest.castShadow = true;
+    bedWest.userData = { info: `Cama ${i + 1} oeste - Habitación ${i + 1}` };
     scene.add(bedWest);
+    bedsWest.push(bedWest);
 
+    const headboardGeometry = new THREE.BoxGeometry(5, 2, 0.2);
+    const headboardWest = new THREE.Mesh(headboardGeometry, headboardMaterial);
+    headboardWest.position.set(-25 + i * 15, 7.5, -45);
+    headboardWest.castShadow = true;
+    headboardWest.receiveShadow = true;
+    headboardWest.userData = { info: `Cabecera de cama ${i + 1} oeste` };
+    scene.add(headboardWest);
+    headboardsWest.push(headboardWest);
+
+    const nightstandGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const nightstandWestLeft = new THREE.Mesh(nightstandGeometry, nightstandMaterial);
+    nightstandWestLeft.position.set(-26.5 + i * 15, 6.5, -42);
+    nightstandWestLeft.castShadow = true;
+    nightstandWestLeft.receiveShadow = true;
+    nightstandWestLeft.userData = { info: `Mesita izquierda de cama ${i + 1} oeste` };
+    scene.add(nightstandWestLeft);
+    nightstandsWestLeft.push(nightstandWestLeft);
+
+    const nightstandWestRight = new THREE.Mesh(nightstandGeometry, nightstandMaterial);
+    nightstandWestRight.position.set(-23.5 + i * 15, 6.5, -42);
+    nightstandWestRight.castShadow = true;
+    nightstandWestRight.receiveShadow = true;
+    nightstandWestRight.userData = { info: `Mesita derecha de cama ${i + 1} oeste` };
+    scene.add(nightstandWestRight);
+    nightstandsWestRight.push(nightstandWestRight);
+
+    // Camas este (clicables)
     const bedGeometryEast = new THREE.BoxGeometry(5, 1, 10);
     const bedEast = new THREE.Mesh(bedGeometryEast, bedMaterial);
     bedEast.position.set(25 - i * 15, 6.5, -40);
     bedEast.receiveShadow = true;
     bedEast.castShadow = true;
+    bedEast.userData = { info: `Cama ${i + 1} este - Habitación ${i + 5}` };
     scene.add(bedEast);
+    bedsEast.push(bedEast);
+
+    const headboardEast = new THREE.Mesh(headboardGeometry, headboardMaterial);
+    headboardEast.position.set(25 - i * 15, 7.5, -45);
+    headboardEast.castShadow = true;
+    headboardEast.receiveShadow = true;
+    headboardEast.userData = { info: `Cabecera de cama ${i + 1} este` };
+    scene.add(headboardEast);
+    headboardsEast.push(headboardEast);
+
+    const nightstandEastLeft = new THREE.Mesh(nightstandGeometry, nightstandMaterial);
+    nightstandEastLeft.position.set(23.5 - i * 15, 6.5, -42);
+    nightstandEastLeft.castShadow = true;
+    nightstandEastLeft.receiveShadow = true;
+    nightstandEastLeft.userData = { info: `Mesita izquierda de cama ${i + 1} este` };
+    scene.add(nightstandEastLeft);
+    nightstandsEastLeft.push(nightstandEastLeft);
+
+    const nightstandEastRight = new THREE.Mesh(nightstandGeometry, nightstandMaterial);
+    nightstandEastRight.position.set(26.5 - i * 15, 6.5, -42);
+    nightstandEastRight.castShadow = true;
+    nightstandEastRight.receiveShadow = true;
+    nightstandEastRight.userData = { info: `Mesita derecha de cama ${i + 1} este` };
+    scene.add(nightstandEastRight);
+    nightstandsEastRight.push(nightstandEastRight);
 }
 
 // Paredes con ventanas (exterior)
@@ -220,10 +386,11 @@ function createSign(text, position) {
 const hotelSign = createSign('Hotel Villa Terrae', new THREE.Vector3(0, 20, -30));
 scene.add(hotelSign);
 
-// Pistas de Tenis con líneas de campo, red ajustada y postes
+// Pistas de Tenis con líneas de campo, red ajustada y postes (con textura)
 const tennisGeometry = new THREE.BoxGeometry(36, 0.5, 18);
-const tennisMaterial = new THREE.MeshLambertMaterial({ color: 0xFF4500 });
+const tennisMaterial = new THREE.MeshLambertMaterial({ map: tennisTexture });
 const tennisCourts = [];
+const tennisNets = [];
 for (let i = 0; i < 3; i++) {
     const tennisCourt = new THREE.Mesh(tennisGeometry, tennisMaterial);
     tennisCourt.position.set(-48 + i * 40, 0.25, 10);
@@ -280,6 +447,7 @@ for (let i = 0; i < 3; i++) {
     tennisNet.position.set(-48 + i * 40, 0.615, 10);
     tennisNet.rotation.y = Math.PI / 2;
     scene.add(tennisNet);
+    tennisNets.push(tennisNet);
 
     const postGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 16);
     const postMaterial = new THREE.MeshLambertMaterial({ color: 0x808080 });
@@ -300,10 +468,11 @@ for (let i = 0; i < 3; i++) {
     scene.add(roof);
 }
 
-// Pistas de Pádel con líneas de campo, red y postes
+// Pistas de Pádel con líneas de campo, red y postes (con textura)
 const padelGeometry = new THREE.BoxGeometry(20, 0.5, 10);
-const padelMaterial = new THREE.MeshLambertMaterial({ color: 0x32CD32 });
+const padelMaterial = new THREE.MeshLambertMaterial({ map: padelTexture });
 const padelCourts = [];
+const padelNets = [];
 for (let i = 0; i < 3; i++) {
     const padelCourt = new THREE.Mesh(padelGeometry, padelMaterial);
     padelCourt.position.set(-30 + i * 25, 0.25, 30);
@@ -336,7 +505,7 @@ for (let i = 0; i < 3; i++) {
     const padelServiceLineLeft = new THREE.Mesh(serviceLineGeometry, lineMaterial);
     padelServiceLineLeft.position.set(-30 + i * 25, 0.26, 30 - 2.78);
     scene.add(padelServiceLineLeft);
-    const padelServiceLineRight = new THREE.Mesh(serviceLineGeometry, lineMaterial); // Corrección aquí
+    const padelServiceLineRight = new THREE.Mesh(serviceLineGeometry, lineMaterial);
     padelServiceLineRight.position.set(-30 + i * 25, 0.26, 30 + 2.78);
     scene.add(padelServiceLineRight);
 
@@ -346,6 +515,7 @@ for (let i = 0; i < 3; i++) {
     padelNet.position.set(-30 + i * 25, 0.6, 30);
     padelNet.rotation.y = Math.PI / 2;
     scene.add(padelNet);
+    padelNets.push(padelNet);
 
     const postGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.72, 16);
     const postMaterial = new THREE.MeshLambertMaterial({ color: 0x808080 });
@@ -366,9 +536,9 @@ for (let i = 0; i < 3; i++) {
     scene.add(roof);
 }
 
-// Piscina Exterior
+// Piscina Exterior (con textura animada)
 const poolGeometry = new THREE.BoxGeometry(25, 0.1, 25);
-const poolMaterial = new THREE.MeshBasicMaterial({ color: 0x00BFFF });
+const poolMaterial = new THREE.MeshBasicMaterial({ map: poolTexture });
 const pool = new THREE.Mesh(poolGeometry, poolMaterial);
 pool.position.set(45, 0.1, 45);
 pool.receiveShadow = true;
@@ -477,7 +647,12 @@ camera.position.set(100, 50, 100);
 // Raycaster para interacción
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-const objects = [building, ...tennisCourts, ...padelCourts, pool];
+const interactiveObjects = [
+    building, ...tennisCourts, ...padelCourts, pool,
+    chair1, chair2, chair3, chair4, table, plant,
+    ...bedsWest, ...bedsEast, ...headboardsWest, ...headboardsEast,
+    ...nightstandsWestLeft, ...nightstandsWestRight, ...nightstandsEastLeft, ...nightstandsEastRight
+];
 const detailsDiv = document.getElementById('details');
 const dayNightDiv = document.getElementById('dayNight');
 
@@ -485,7 +660,7 @@ function onMouseMove(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(objects);
+    const intersects = raycaster.intersectObjects(interactiveObjects);
     labels.forEach(label => label.visible = false);
     if (intersects.length > 0) {
         const intersected = intersects[0].object;
@@ -522,11 +697,11 @@ function onMouseClick(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(objects);
+    const intersects = raycaster.intersectObjects(interactiveObjects);
     if (intersects.length > 0) {
         const intersected = intersects[0].object;
         selectedObject = intersected;
-        createOutline(interected);
+        createOutline(intersected);
         detailsDiv.style.display = 'block';
         let targetPosition, targetLookAt;
         if (intersected === building) {
@@ -545,6 +720,10 @@ function onMouseClick(event) {
             detailsDiv.innerHTML = 'Piscina Exterior: Borde infinito.<br>Superficie: 625 m²';
             targetPosition = new THREE.Vector3(65, 20, 65);
             targetLookAt = new THREE.Vector3(45, 0, 45);
+        } else if (intersected.userData && intersected.userData.info) {
+            detailsDiv.innerHTML = intersected.userData.info; // Información de muebles
+            targetPosition = intersected.position.clone().add(new THREE.Vector3(5, 5, 5));
+            targetLookAt = intersected.position.clone();
         }
         smoothZoom(targetPosition, targetLookAt, 1);
     } else {
@@ -578,7 +757,8 @@ toggleLightButton.addEventListener('click', () => {
         ambientLight.intensity = 0.8;
         nightLight.intensity = 0;
         volumetricLight.intensity = 0;
-        interiorLight.intensity = 0;
+        interiorLight.intensity = 0.5;
+        lamp.material.color.set(0xFFD700);
         dayNightDiv.textContent = 'Día';
     } else {
         scene.background = new THREE.Color(0x191970);
@@ -586,8 +766,9 @@ toggleLightButton.addEventListener('click', () => {
         directionalLight.intensity = 0.5;
         ambientLight.intensity = 0.3;
         nightLight.intensity = 1;
-        volumetricLight.intensity = 0.5 + Math.sin(time) * 0.2;
-        interiorLight.intensity = 0.5;
+        volumetricLight.intensity = 0.5;
+        interiorLight.intensity = 0.8;
+        lamp.material.color.set(0xFFA500);
         dayNightDiv.textContent = 'Noche';
     }
 });
@@ -620,6 +801,7 @@ function animate() {
     requestAnimationFrame(animate);
     time += 0.05;
 
+    // Animación de lluvia
     if (isRaining) {
         const rainPositions = rain.geometry.attributes.position.array;
         for (let i = 0; i < rainCount; i++) {
@@ -629,6 +811,7 @@ function animate() {
         rain.geometry.attributes.position.needsUpdate = true;
     }
 
+    // Animación de arbustos
     bushesNorth.forEach((bush, i) => {
         bush.position.x = -50 + i * 20 + Math.sin(time + i) * 0.2;
     });
@@ -636,12 +819,27 @@ function animate() {
         bush.position.x = -60 + i * 24 + Math.cos(time + i) * 0.2;
     });
 
+    // Animación de luces dinámicas
     if (!isDay) {
         volumetricLight.intensity = 0.5 + Math.sin(time) * 0.2;
-        directionalLight.shadow.bias = -0.0001 + Math.sin(time) * 0.00005;
+        interiorLight.intensity = 0.8 + Math.cos(time) * 0.2;
+        directionalLight.shadow.bias = -0.00005 + Math.sin(time) * 0.00002;
     } else {
-        directionalLight.shadow.bias = -0.0001;
+        directionalLight.shadow.bias = -0.00005;
     }
+
+    // Animación de agua en la piscina
+    poolMaterial.map.offset.x += 0.01 * Math.sin(time);
+    poolMaterial.map.offset.y += 0.005 * Math.cos(time);
+    poolMaterial.map.needsUpdate = true;
+
+    // Animación de redes de tenis y pádel
+    tennisNets.forEach(net => {
+        net.position.y = 0.615 + Math.sin(time) * 0.05; // Oscilación suave
+    });
+    padelNets.forEach(net => {
+        net.position.y = 0.6 + Math.sin(time) * 0.03; // Oscilación más pequeña
+    });
 
     if (selectedObject && outlineMesh) {
         outlineMesh.position.copy(selectedObject.position);
