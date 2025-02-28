@@ -132,6 +132,7 @@ const padelTexture = createTexture('#32CD32', '#228B22', 'generic');
 const buildingTexture = createTexture('#D2B48C', '#DEB887', 'brick');
 const terrainTexture = createTexture('#228B22', '#006400', 'grass');
 const grassTexture = createTexture('#228B22', '#006400', 'grass');
+const stoneTexture = createTexture('#A9A9A9', '#808080', 'brick'); // Simula piedras
 
 // Terreno (con textura)
 const terrainGeometry = new THREE.PlaneGeometry(120, 100);
@@ -522,6 +523,60 @@ grass.castShadow = true;
 grass.userData = { info: 'Césped alrededor de la piscina' };
 scene.add(grass);
 
+// Bar pequeño junto a la piscina
+const barCounterGeometry = new THREE.BoxGeometry(10, 1.5, 4);
+const barCounterMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 }); // Color madera oscura
+const barCounter = new THREE.Mesh(barCounterGeometry, barCounterMaterial);
+barCounter.position.set(20, 1, 45); // A la izquierda de la piscina
+barCounter.castShadow = true;
+barCounter.receiveShadow = true;
+barCounter.userData = { info: 'Bar junto a la piscina' };
+scene.add(barCounter);
+
+const barStoolGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 16);
+const barStoolMaterial = new THREE.MeshLambertMaterial({ color: 0xC0C0C0 }); // Color metálico
+const barStools = [];
+function createBarStool(x, z) {
+    const stool = new THREE.Mesh(barStoolGeometry, barStoolMaterial);
+    stool.position.set(x, 0.4, z); // Altura ajustada para la barra
+    stool.castShadow = true;
+    stool.receiveShadow = true;
+    stool.userData = { info: 'Taburete del bar' };
+    scene.add(stool);
+    barStools.push(stool);
+    return stool;
+}
+// Colocar taburetes a lo largo de la barra
+createBarStool(15, 47); // Frente a la barra
+createBarStool(17, 47);
+createBarStool(19, 47);
+createBarStool(21, 47);
+createBarStool(23, 47);
+createBarStool(25, 47);
+
+// Caminos de piedra alrededor de la piscina
+const stonePathGeometry = new THREE.PlaneGeometry(5, 40); // Camino estrecho a lo largo del borde
+const stonePathMaterial = new THREE.MeshLambertMaterial({ map: stoneTexture });
+const stonePaths = [];
+
+function createStonePath(x, z, rotationY = 0) {
+    const path = new THREE.Mesh(stonePathGeometry, stonePathMaterial);
+    path.position.set(x, 0.1, z); // Altura baja para integrar con el césped
+    path.rotation.y = rotationY;
+    path.receiveShadow = true;
+    path.castShadow = true;
+    path.userData = { info: 'Camino de piedra junto a la piscina' };
+    scene.add(path);
+    stonePaths.push(path);
+    return path;
+}
+
+// Colocar caminos alrededor de la piscina
+createStonePath(70, 45); // Norte
+createStonePath(20, 45); // Oeste
+createStonePath(45, 70); // Este
+createStonePath(45, 20, Math.PI / 2); // Sur (rotado 90°)
+
 // Pistas de Tenis con líneas de campo, red ajustada y postes (con placas solares)
 const tennisGeometry = new THREE.BoxGeometry(36, 0.5, 18);
 const tennisMaterial = new THREE.MeshLambertMaterial({ map: tennisTexture });
@@ -672,11 +727,11 @@ for (let i = 0; i < 3; i++) {
     scene.add(solarRoof);
 }
 
-// Raycaster para interacción (incluye tumbonas, sombrillas, mesas, toallas y césped)
+// Raycaster para interacción (incluye caminos)
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 const interactiveObjects = [
-    building, ...tennisCourts, ...padelCourts, pool, ...loungeChairs, ...umbrellas, ...smallTables, ...towels, grass,
+    building, ...tennisCourts, ...padelCourts, pool, ...loungeChairs, ...umbrellas, ...smallTables, ...towels, grass, barCounter, ...barStools, ...stonePaths,
     ...chairs, table, plant,
     ...bedsWest, ...bedsEast, ...headboardsWest, ...headboardsEast,
     ...nightstandsWestLeft, ...nightstandsWestRight, ...nightstandsEastLeft, ...nightstandsEastRight
@@ -842,7 +897,7 @@ function onMouseMove(event) {
         const intersected = intersects[0].object;
         if (intersected === building) buildingLabel.visible = true;
         else if (tennisCourts.includes(intersected)) tennisLabel.visible = true;
-        else if (padelCourts.includes(interacted)) padelLabel.visible = true;
+        else if (padelCourts.includes(intersected)) padelLabel.visible = true;
         else if (intersected === pool) poolLabel.visible = true;
     }
 }
@@ -1064,6 +1119,14 @@ function animate() {
     });
 
     grass.position.y = 0.05 + Math.sin(time * 0.5) * 0.01; // Movimiento ondulante muy sutil para el césped
+
+    barStools.forEach((stool, i) => {
+        stool.position.y = 0.4 + Math.sin(time + i * 0.5) * 0.02; // Movimiento oscilante sutil
+    });
+
+    stonePaths.forEach((path, i) => {
+        path.position.y = 0.1 + Math.sin(time + i * 0.3) * 0.005; // Movimiento muy sutil para simular desgaste
+    });
 
     if (!isDay) {
         volumetricLight.intensity = 0.5 + Math.sin(time) * 0.2;
