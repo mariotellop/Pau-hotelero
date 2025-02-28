@@ -131,6 +131,7 @@ const tennisTexture = createTexture('#FF4500', '#CD5C5C', 'generic');
 const padelTexture = createTexture('#32CD32', '#228B22', 'generic');
 const buildingTexture = createTexture('#D2B48C', '#DEB887', 'brick');
 const terrainTexture = createTexture('#228B22', '#006400', 'grass');
+const grassTexture = createTexture('#228B22', '#006400', 'grass');
 
 // Terreno (con textura)
 const terrainGeometry = new THREE.PlaneGeometry(120, 100);
@@ -487,6 +488,40 @@ createSmallTable(56, 57);  // Sureste, entre tumbona y sombrilla
 createSmallTable(34, 33);  // Noroeste, entre tumbona y sombrilla
 createSmallTable(56, 33);  // Noreste, entre tumbona y sombrilla
 
+// Toallas sobre las tumbonas
+const towelGeometry = new THREE.BoxGeometry(1.8, 0.05, 3.8);
+const towelMaterial = new THREE.MeshLambertMaterial({ color: 0x00CED1 }); // Color turquesa
+const towels = [];
+
+function createTowel(x, z, rotationY = 0) {
+    const towel = new THREE.Mesh(towelGeometry, towelMaterial);
+    towel.position.set(x, 0.25, z); // Sobre la tumbona (0.1 + 0.15)
+    towel.rotation.y = rotationY;
+    towel.castShadow = true;
+    towel.receiveShadow = true;
+    towel.userData = { info: 'Toalla sobre la tumbona' };
+    scene.add(towel);
+    towels.push(towel);
+    return towel;
+}
+
+// Colocar toallas sobre las tumbonas
+createTowel(35, 55);          // Suroeste
+createTowel(55, 55);          // Sureste
+createTowel(35, 35, Math.PI); // Noroeste (rotada 180°)
+createTowel(55, 35, Math.PI); // Noreste (rotada 180°)
+
+// Césped alrededor de la piscina
+const grassGeometry = new THREE.PlaneGeometry(40, 40);
+const grassMaterial = new THREE.MeshLambertMaterial({ map: grassTexture });
+const grass = new THREE.Mesh(grassGeometry, grassMaterial);
+grass.position.set(45, 0.05, 45); // Centrado en la piscina, ligeramente elevado
+grass.rotation.x = -Math.PI / 2;
+grass.receiveShadow = true;
+grass.castShadow = true;
+grass.userData = { info: 'Césped alrededor de la piscina' };
+scene.add(grass);
+
 // Pistas de Tenis con líneas de campo, red ajustada y postes (con placas solares)
 const tennisGeometry = new THREE.BoxGeometry(36, 0.5, 18);
 const tennisMaterial = new THREE.MeshLambertMaterial({ map: tennisTexture });
@@ -637,11 +672,11 @@ for (let i = 0; i < 3; i++) {
     scene.add(solarRoof);
 }
 
-// Raycaster para interacción (incluye tumbonas, sombrillas y mesas)
+// Raycaster para interacción (incluye tumbonas, sombrillas, mesas, toallas y césped)
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 const interactiveObjects = [
-    building, ...tennisCourts, ...padelCourts, pool, ...loungeChairs, ...umbrellas, ...smallTables,
+    building, ...tennisCourts, ...padelCourts, pool, ...loungeChairs, ...umbrellas, ...smallTables, ...towels, grass,
     ...chairs, table, plant,
     ...bedsWest, ...bedsEast, ...headboardsWest, ...headboardsEast,
     ...nightstandsWestLeft, ...nightstandsWestRight, ...nightstandsEastLeft, ...nightstandsEastRight
@@ -806,7 +841,7 @@ function onMouseMove(event) {
     if (intersects.length > 0) {
         const intersected = intersects[0].object;
         if (intersected === building) buildingLabel.visible = true;
-        else if (tennisCourts.includes(interacted)) tennisLabel.visible = true;
+        else if (tennisCourts.includes(intersected)) tennisLabel.visible = true;
         else if (padelCourts.includes(interacted)) padelLabel.visible = true;
         else if (intersected === pool) poolLabel.visible = true;
     }
@@ -1023,6 +1058,12 @@ function animate() {
     smallTables.forEach((table, i) => {
         table.position.y = 0.25 + Math.sin(time + i + 2) * 0.03; // Movimiento sutil, desfasado
     });
+
+    towels.forEach((towel, i) => {
+        towel.position.y = 0.25 + Math.sin(time + i * 1.5) * 0.02; // Movimiento ondulante, más lento
+    });
+
+    grass.position.y = 0.05 + Math.sin(time * 0.5) * 0.01; // Movimiento ondulante muy sutil para el césped
 
     if (!isDay) {
         volumetricLight.intensity = 0.5 + Math.sin(time) * 0.2;
