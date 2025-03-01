@@ -96,7 +96,7 @@ const buildingHeight = 25; // 5 plantas de 5 unidades cada una
 const buildingGeometry = new THREE.BoxGeometry(buildingWidth, buildingHeight, buildingDepth);
 const buildingMaterial = new THREE.MeshLambertMaterial({ map: buildingTexture });
 const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
-building.position.set(0, buildingHeight / 2, 0);
+building.position.set(-50, buildingHeight / 2, 0); // Mover al oeste
 building.castShadow = true;
 building.receiveShadow = true;
 scene.add(building);
@@ -105,11 +105,11 @@ scene.add(building);
 const roofGeometry = new THREE.BoxGeometry(buildingWidth + 2, 2, buildingDepth + 2);
 const roofMaterial = new THREE.MeshLambertMaterial({ color: 0x1C2526 }); // Negro
 const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-roof.position.set(0, buildingHeight + 1, 0);
+roof.position.set(-50, buildingHeight + 1, 0); // Ajustado al oeste
 roof.castShadow = true;
 scene.add(roof);
 
-// Logo simple (texto 2D)
+// Logo simple
 const logoCanvas = document.createElement('canvas');
 logoCanvas.width = 256;
 logoCanvas.height = 64;
@@ -125,19 +125,19 @@ logoTexture.needsUpdate = true;
 const logoMaterial = new THREE.SpriteMaterial({ map: logoTexture });
 const logo = new THREE.Sprite(logoMaterial);
 logo.scale.set(20, 5, 1);
-logo.position.set(0, buildingHeight + 1.5, buildingDepth / 2 + 1);
+logo.position.set(-50, buildingHeight + 1.5, buildingDepth / 2 + 1);
 scene.add(logo);
 
 // Entrada de vidrio
 const entranceGeometry = new THREE.BoxGeometry(20, 6, 5);
 const entranceMaterial = new THREE.MeshLambertMaterial({ map: glassTexture, transparent: true, opacity: 0.7 });
 const entrance = new THREE.Mesh(entranceGeometry, entranceMaterial);
-entrance.position.set(0, 3, -buildingDepth / 2 + 2.5);
+entrance.position.set(-50, 3, -buildingDepth / 2 + 2.5);
 entrance.castShadow = true;
 entrance.receiveShadow = true;
 scene.add(entrance);
 
-// Ventanas (fachadas este, sur y oeste)
+// Ventanas
 const windowGeometry = new THREE.BoxGeometry(2, 1.5, 0.1);
 const windowMaterial = new THREE.MeshLambertMaterial({ color: 0x87CEEB, transparent: true, opacity: 0.8 });
 const windowSpacingX = 6;
@@ -145,22 +145,22 @@ const windowSpacingZ = 6;
 const windowOffsetX = -buildingWidth / 2 + 2;
 const windowOffsetZ = -buildingDepth / 2 + 2;
 for (let floor = 0; floor < 5; floor++) {
-    for (let x = 0; x < 10; x++) { // Más ventanas en fachada este y oeste
+    for (let x = 0; x < 10; x++) {
         const windowEast = new THREE.Mesh(windowGeometry, windowMaterial);
-        windowEast.position.set(buildingWidth / 2 - 1, 1.5 + floor * 5, windowOffsetZ + x * windowSpacingZ);
+        windowEast.position.set(-50 + buildingWidth / 2 - 1, 1.5 + floor * 5, windowOffsetZ + x * windowSpacingZ);
         windowEast.rotation.y = 0;
         windowEast.castShadow = true;
         scene.add(windowEast);
 
         const windowWest = new THREE.Mesh(windowGeometry, windowMaterial);
-        windowWest.position.set(-buildingWidth / 2 + 1, 1.5 + floor * 5, windowOffsetZ + x * windowSpacingZ);
+        windowWest.position.set(-50 - buildingWidth / 2 + 1, 1.5 + floor * 5, windowOffsetZ + x * windowSpacingZ);
         windowWest.rotation.y = Math.PI;
         windowWest.castShadow = true;
         scene.add(windowWest);
     }
-    for (let z = 0; z < 8; z++) { // Ventanas en fachada sur
+    for (let z = 0; z < 8; z++) {
         const windowSouth = new THREE.Mesh(windowGeometry, windowMaterial);
-        windowSouth.position.set(windowOffsetX + z * windowSpacingX, 1.5 + floor * 5, -buildingDepth / 2 + 1);
+        windowSouth.position.set(-50 + windowOffsetX + z * windowSpacingX, 1.5 + floor * 5, -buildingDepth / 2 + 1);
         windowSouth.rotation.y = Math.PI / 2;
         windowSouth.castShadow = true;
         scene.add(windowSouth);
@@ -172,7 +172,7 @@ const panelGeometry = new THREE.BoxGeometry(0.2, 10, buildingDepth);
 const panelMaterial = new THREE.MeshLambertMaterial({ color: 0xD3D3D3 });
 for (let i = -2; i <= 2; i++) {
     const panel = new THREE.Mesh(panelGeometry, panelMaterial);
-    panel.position.set(i * 10, 5, 0);
+    panel.position.set(-50 + i * 10, 5, 0);
     panel.castShadow = true;
     scene.add(panel);
 }
@@ -195,7 +195,7 @@ for (let i = -80; i <= 80; i += 20) {
     scene.add(tree);
 }
 
-// Personas básicas (cubos simples)
+// Personas básicas
 const personGeometry = new THREE.BoxGeometry(1, 2, 1);
 const personMaterial = new THREE.MeshLambertMaterial({ color: 0xFFA500 });
 for (let i = -50; i <= 50; i += 20) {
@@ -205,7 +205,7 @@ for (let i = -50; i <= 50; i += 20) {
     scene.add(person);
 }
 
-// Vehículos básicos (cubos simples)
+// Vehículos básicos
 const carGeometry = new THREE.BoxGeometry(4, 2, 2);
 const carMaterial = new THREE.MeshLambertMaterial({ color: 0x0000FF });
 for (let i = -60; i <= 60; i += 20) {
@@ -215,10 +215,11 @@ for (let i = -60; i <= 60; i += 20) {
     scene.add(car);
 }
 
-// Pistas de Tenis
+// Pistas de Tenis con cubiertas
 const tennisGeometry = new THREE.BoxGeometry(36, 0.5, 18);
 const tennisMaterial = new THREE.MeshLambertMaterial({ color: 0xFF4500 });
 const tennisCourts = [];
+const tennisNets = [];
 for (let i = 0; i < 3; i++) {
     const tennisCourt = new THREE.Mesh(tennisGeometry, tennisMaterial);
     tennisCourt.position.set(-38 + i * 40, 0.25, 10);
@@ -226,12 +227,43 @@ for (let i = 0; i < 3; i++) {
     tennisCourt.receiveShadow = true;
     scene.add(tennisCourt);
     tennisCourts.push(tennisCourt);
+
+    const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
+    const outerLineGeometry = new THREE.BoxGeometry(36.2, 0.1, 0.2);
+    const outerLineBottom = new THREE.Mesh(outerLineGeometry, lineMaterial);
+    outerLineBottom.position.set(-38 + i * 40, 0.26, 10 - 9);
+    scene.add(outerLineBottom);
+    const outerLineTop = new THREE.Mesh(outerLineGeometry, lineMaterial);
+    outerLineTop.position.set(-38 + i * 40, 0.26, 10 + 9);
+    scene.add(outerLineTop);
+    const outerLineLeft = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 18.4), lineMaterial);
+    outerLineLeft.position.set(-38 + i * 40 - 18, 0.26, 10);
+    scene.add(outerLineLeft);
+    const outerLineRight = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 18.4), lineMaterial);
+    outerLineRight.position.set(-38 + i * 40 + 18, 0.26, 10);
+    scene.add(outerLineRight);
+
+    const netGeometry = new THREE.PlaneGeometry(36, 0.73);
+    const netMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, opacity: 0.8, transparent: true });
+    const tennisNet = new THREE.Mesh(netGeometry, netMaterial);
+    tennisNet.position.set(-38 + i * 40, 0.615, 10);
+    tennisNet.rotation.y = Math.PI / 2;
+    scene.add(tennisNet);
+    tennisNets.push(tennisNet);
+
+    const solarRoofGeometry = new THREE.BoxGeometry(38, 0.2, 20);
+    const solarRoofMaterial = new THREE.MeshLambertMaterial({ color: 0x1C2526 });
+    const solarRoof = new THREE.Mesh(solarRoofGeometry, solarRoofMaterial);
+    solarRoof.position.set(-38 + i * 40, 10, 10);
+    solarRoof.castShadow = true;
+    scene.add(solarRoof);
 }
 
-// Pistas de Pádel
+// Pistas de Pádel con cubiertas
 const padelGeometry = new THREE.BoxGeometry(20, 0.5, 10);
 const padelMaterial = new THREE.MeshLambertMaterial({ color: 0x32CD32 });
 const padelCourts = [];
+const padelNets = [];
 for (let i = 0; i < 3; i++) {
     const padelCourt = new THREE.Mesh(padelGeometry, padelMaterial);
     padelCourt.position.set(-30 + i * 25, 0.25, 30);
@@ -239,6 +271,36 @@ for (let i = 0; i < 3; i++) {
     padelCourt.receiveShadow = true;
     scene.add(padelCourt);
     padelCourts.push(padelCourt);
+
+    const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
+    const outerLineGeometry = new THREE.BoxGeometry(20.2, 0.1, 0.2);
+    const outerLineBottom = new THREE.Mesh(outerLineGeometry, lineMaterial);
+    outerLineBottom.position.set(-30 + i * 25, 0.26, 30 - 5);
+    scene.add(outerLineBottom);
+    const outerLineTop = new THREE.Mesh(outerLineGeometry, lineMaterial);
+    outerLineTop.position.set(-30 + i * 25, 0.26, 30 + 5);
+    scene.add(outerLineTop);
+    const outerLineLeft = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 10.4), lineMaterial);
+    outerLineLeft.position.set(-30 + i * 25 - 10, 0.26, 30);
+    scene.add(outerLineLeft);
+    const outerLineRight = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 10.4), lineMaterial);
+    outerLineRight.position.set(-30 + i * 25 + 10, 0.26, 30);
+    scene.add(outerLineRight);
+
+    const netGeometry = new THREE.PlaneGeometry(10, 0.7);
+    const netMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, opacity: 0.8, transparent: true });
+    const padelNet = new THREE.Mesh(netGeometry, netMaterial);
+    padelNet.position.set(-30 + i * 25, 0.6, 30);
+    padelNet.rotation.y = Math.PI / 2;
+    scene.add(padelNet);
+    padelNets.push(padelNet);
+
+    const solarRoofGeometry = new THREE.BoxGeometry(22, 0.2, 12);
+    const solarRoofMaterial = new THREE.MeshLambertMaterial({ color: 0x1C2526 });
+    const solarRoof = new THREE.Mesh(solarRoofGeometry, solarRoofMaterial);
+    solarRoof.position.set(-30 + i * 25, 8, 30);
+    solarRoof.castShadow = true;
+    scene.add(solarRoof);
 }
 
 // Piscina
@@ -314,7 +376,7 @@ function onDoubleClick(event) {
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects([building]);
-    if (intersects.length > 0) smoothZoom(new THREE.Vector3(0, 14, -15), new THREE.Vector3(0, 11, 0), 1);
+    if (intersects.length > 0) smoothZoom(new THREE.Vector3(-50, 14, -15), new THREE.Vector3(-50, 11, 0), 1);
 }
 window.addEventListener('dblclick', onDoubleClick);
 
@@ -375,7 +437,7 @@ document.getElementById('resetRotation').addEventListener('click', () => {
 });
 
 document.getElementById('viewHotel').addEventListener('click', () => {
-    smoothZoom(new THREE.Vector3(50, 20, -50), new THREE.Vector3(0, 9, 0), 1);
+    smoothZoom(new THREE.Vector3(-50, 20, -50), new THREE.Vector3(-50, 9, 0), 1);
 });
 document.getElementById('viewCourts').addEventListener('click', () => {
     smoothZoom(new THREE.Vector3(0, 20, 50), new THREE.Vector3(0, 0, 20), 1);
