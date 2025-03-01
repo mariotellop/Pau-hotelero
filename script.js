@@ -164,12 +164,20 @@ scene.add(entrance);
 // Ventanas alineadas en la fachada este
 const windowGeometry = new THREE.BoxGeometry(3, 2, 0.1);
 const windowMaterial = new THREE.MeshLambertMaterial({ color: 0x4682B4 });
-for (let i = 0; i < 5; i++) { // Reduje a 5 ventanas para mejor distribución
+for (let i = 0; i < 5; i++) { // Ventanas en la fachada este (x = 33)
     const windowMeshEast = new THREE.Mesh(windowGeometry, windowMaterial);
     windowMeshEast.position.set(33, 8 + i * 2, -55); // Alineadas verticalmente en la fachada este
-    windowMeshEast.rotation.y = 0; // Corrección: sin rotación para alinear con la fachada
+    windowMeshEast.rotation.y = 0;
     windowMeshEast.castShadow = true;
     scene.add(windowMeshEast);
+}
+// Ventanas en la fachada sur (z = -85)
+for (let i = 0; i < 5; i++) { // Ventanas simétricas en la fachada sur
+    const windowMeshSouth = new THREE.Mesh(windowGeometry, windowMaterial);
+    windowMeshSouth.position.set(0, 8 + i * 2, -85); // Centradas en x, alineadas verticalmente en z = -85
+    windowMeshSouth.rotation.y = Math.PI / 2; // Rotación para alinear con la fachada sur
+    windowMeshSouth.castShadow = true;
+    scene.add(windowMeshSouth);
 }
 
 // Planta baja (locales)
@@ -571,7 +579,7 @@ const tennisCourts = [];
 const tennisNets = [];
 for (let i = 0; i < 3; i++) {
     const tennisCourt = new THREE.Mesh(tennisGeometry, tennisMaterial);
-    tennisCourt.position.set(-28 + i * 40, 0.25, 10); // Desplazado 20 unidades hacia el este
+    tennisCourt.position.set(-38 + i * 40, 0.25, 10); // Desplazado 10 unidades hacia el este
     tennisCourt.castShadow = true;
     tennisCourt.receiveShadow = true;
     scene.add(tennisCourt);
@@ -580,49 +588,49 @@ for (let i = 0; i < 3; i++) {
     const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
     const outerLineGeometry = new THREE.BoxGeometry(36.2, 0.1, 0.2);
     const outerLineBottom = new THREE.Mesh(outerLineGeometry, lineMaterial);
-    outerLineBottom.position.set(-28 + i * 40, 0.26, 10 - 9);
+    outerLineBottom.position.set(-38 + i * 40, 0.26, 10 - 9);
     scene.add(outerLineBottom);
     const outerLineTop = new THREE.Mesh(outerLineGeometry, lineMaterial);
-    outerLineTop.position.set(-28 + i * 40, 0.26, 10 + 9);
+    outerLineTop.position.set(-38 + i * 40, 0.26, 10 + 9);
     scene.add(outerLineTop);
     const outerLineLeft = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 18.4), lineMaterial);
-    outerLineLeft.position.set(-28 + i * 40 - 18, 0.26, 10);
+    outerLineLeft.position.set(-38 + i * 40 - 18, 0.26, 10);
     scene.add(outerLineLeft);
     const outerLineRight = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 18.4), lineMaterial);
-    outerLineRight.position.set(-28 + i * 40 + 18, 0.26, 10);
+    outerLineRight.position.set(-38 + i * 40 + 18, 0.26, 10);
     scene.add(outerLineRight);
 
     const singlesLineGeometry = new THREE.BoxGeometry(13.34, 0.1, 0.2);
     const singlesLineBottom = new THREE.Mesh(singlesLineGeometry, lineMaterial);
-    singlesLineBottom.position.set(-28 + i * 40, 0.26, 10 - 9);
+    singlesLineBottom.position.set(-38 + i * 40, 0.26, 10 - 9);
     scene.add(singlesLineBottom);
     const singlesLineTop = new THREE.Mesh(singlesLineGeometry, lineMaterial);
-    singlesLineTop.position.set(-28 + i * 40, 0.26, 10 + 9);
+    singlesLineTop.position.set(-38 + i * 40, 0.26, 10 + 9);
     scene.add(singlesLineTop);
     const singlesLineLeft = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 18.4), lineMaterial);
-    singlesLineLeft.position.set(-28 + i * 40 - 6.57, 0.26, 10);
+    singlesLineLeft.position.set(-38 + i * 40 - 6.57, 0.26, 10);
     scene.add(singlesLineLeft);
     const singlesLineRight = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 18.4), lineMaterial);
-    singlesLineRight.position.set(-28 + i * 40 + 6.57, 0.26, 10);
+    singlesLineRight.position.set(-38 + i * 40 + 6.57, 0.26, 10);
     scene.add(singlesLineRight);
 
     const centerLineGeometry = new THREE.BoxGeometry(0.2, 0.1, 18);
     const tennisCenterLine = new THREE.Mesh(centerLineGeometry, lineMaterial);
-    tennisCenterLine.position.set(-28 + i * 40, 0.26, 10);
+    tennisCenterLine.position.set(-38 + i * 40, 0.26, 10);
     scene.add(tennisCenterLine);
 
     const serviceLineGeometry = new THREE.BoxGeometry(13.34, 0.1, 0.2);
     const tennisServiceLineLeft = new THREE.Mesh(serviceLineGeometry, lineMaterial);
-    tennisServiceLineLeft.position.set(-28 + i * 40, 0.26, 10 - 2.56);
+    tennisServiceLineLeft.position.set(-38 + i * 40, 0.26, 10 - 2.56);
     scene.add(tennisServiceLineLeft);
     const tennisServiceLineRight = new THREE.Mesh(serviceLineGeometry, lineMaterial);
-    tennisServiceLineRight.position.set(-28 + i * 40, 0.26, 10 + 2.56);
+    tennisServiceLineRight.position.set(-38 + i * 40, 0.26, 10 + 2.56);
     scene.add(tennisServiceLineRight);
 
     const netGeometry = new THREE.PlaneGeometry(36, 0.73);
     const netMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, opacity: 0.8, transparent: true });
     const tennisNet = new THREE.Mesh(netGeometry, netMaterial);
-    tennisNet.position.set(-28 + i * 40, 0.615, 10);
+    tennisNet.position.set(-38 + i * 40, 0.615, 10);
     tennisNet.rotation.y = Math.PI / 2;
     scene.add(tennisNet);
     tennisNets.push(tennisNet);
@@ -630,18 +638,18 @@ for (let i = 0; i < 3; i++) {
     const postGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 16);
     const postMaterial = new THREE.MeshLambertMaterial({ color: 0x808080 });
     const leftPost = new THREE.Mesh(postGeometry, postMaterial);
-    leftPost.position.set(-28 + i * 40 - 18, 0.65, 10);
+    leftPost.position.set(-38 + i * 40 - 18, 0.65, 10);
     leftPost.castShadow = true;
     scene.add(leftPost);
     const rightPost = new THREE.Mesh(postGeometry, postMaterial);
-    rightPost.position.set(-28 + i * 40 + 18, 0.65, 10);
+    rightPost.position.set(-38 + i * 40 + 18, 0.65, 10);
     rightPost.castShadow = true;
     scene.add(rightPost);
 
     const solarRoofGeometry = new THREE.BoxGeometry(38, 0.2, 20);
     const solarRoofMaterial = new THREE.MeshLambertMaterial({ color: 0x1C2526 });
     const solarRoof = new THREE.Mesh(solarRoofGeometry, solarRoofMaterial);
-    solarRoof.position.set(-28 + i * 40, 10, 10);
+    solarRoof.position.set(-38 + i * 40, 10, 10);
     solarRoof.castShadow = true;
     scene.add(solarRoof);
 }
