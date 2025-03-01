@@ -7,11 +7,14 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
+// Variables globales
+let time = 0; // Declaración única de time
+
 // Fondo de cielo (dinámico con nubes)
 const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
 const skyMaterial = new THREE.ShaderMaterial({
     uniforms: {
-        time: { value: 0.0 },
+        time: { value: time },
         dayColor: { value: new THREE.Color(0x87CEEB) },
         nightColor: { value: new THREE.Color(0x191970) },
         isDay: { value: 1.0 }
@@ -132,7 +135,6 @@ const padelTexture = createTexture('#32CD32', '#228B22', 'generic');
 const buildingTexture = createTexture('#D2B48C', '#DEB887', 'brick');
 const terrainTexture = createTexture('#228B22', '#006400', 'grass');
 const grassTexture = createTexture('#228B22', '#006400', 'grass');
-const stoneTexture = createTexture('#A9A9A9', '#808080', 'brick'); // Simula piedras
 
 // Terreno (con textura)
 const terrainGeometry = new THREE.PlaneGeometry(120, 100);
@@ -159,13 +161,13 @@ entrance.castShadow = true;
 entrance.receiveShadow = true;
 scene.add(entrance);
 
-// Ventanas solo en la fachada este (x positivo)
+// Ventanas alineadas en la fachada este
 const windowGeometry = new THREE.BoxGeometry(3, 2, 0.1);
 const windowMaterial = new THREE.MeshLambertMaterial({ color: 0x4682B4 });
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 5; i++) { // Reduje a 5 ventanas para mejor distribución
     const windowMeshEast = new THREE.Mesh(windowGeometry, windowMaterial);
-    windowMeshEast.position.set(35, 8 + i % 2 * 4, -55 + i * 6);
-    windowMeshEast.rotation.y = Math.PI;
+    windowMeshEast.position.set(33, 8 + i * 2, -55); // Alineadas verticalmente en la fachada este
+    windowMeshEast.rotation.y = 0; // Corrección: sin rotación para alinear con la fachada
     windowMeshEast.castShadow = true;
     scene.add(windowMeshEast);
 }
@@ -384,7 +386,7 @@ scene.add(terrace);
 const poolGeometry = new THREE.BoxGeometry(25, 0.1, 25);
 const poolMaterial = new THREE.ShaderMaterial({
     uniforms: {
-        time: { value: 0.0 },
+        time: { value: time },
         baseColor: { value: new THREE.Color(0x00BFFF) }
     },
     vertexShader: `
@@ -523,7 +525,7 @@ grass.castShadow = true;
 grass.userData = { info: 'Césped alrededor de la piscina' };
 scene.add(grass);
 
-// Bar pequeño junto a la piscina
+// Bar pequeño junto a la piscina con techo
 const barCounterGeometry = new THREE.BoxGeometry(10, 1.5, 4);
 const barCounterMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 }); // Color madera oscura
 const barCounter = new THREE.Mesh(barCounterGeometry, barCounterMaterial);
@@ -532,6 +534,14 @@ barCounter.castShadow = true;
 barCounter.receiveShadow = true;
 barCounter.userData = { info: 'Bar junto a la piscina' };
 scene.add(barCounter);
+
+const barRoofGeometry = new THREE.BoxGeometry(12, 0.2, 6);
+const barRoofMaterial = new THREE.MeshLambertMaterial({ color: 0x696969 }); // Color gris oscuro
+const barRoof = new THREE.Mesh(barRoofGeometry, barRoofMaterial);
+barRoof.position.set(20, 2.5, 45); // Encima de la barra
+barRoof.castShadow = true;
+barRoof.receiveShadow = true;
+scene.add(barRoof);
 
 const barStoolGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.8, 16);
 const barStoolMaterial = new THREE.MeshLambertMaterial({ color: 0xC0C0C0 }); // Color metálico
@@ -553,29 +563,6 @@ createBarStool(19, 47);
 createBarStool(21, 47);
 createBarStool(23, 47);
 createBarStool(25, 47);
-
-// Caminos de piedra alrededor de la piscina
-const stonePathGeometry = new THREE.PlaneGeometry(5, 40); // Camino estrecho a lo largo del borde
-const stonePathMaterial = new THREE.MeshLambertMaterial({ map: stoneTexture });
-const stonePaths = [];
-
-function createStonePath(x, z, rotationY = 0) {
-    const path = new THREE.Mesh(stonePathGeometry, stonePathMaterial);
-    path.position.set(x, 0.1, z); // Altura baja para integrar con el césped
-    path.rotation.y = rotationY;
-    path.receiveShadow = true;
-    path.castShadow = true;
-    path.userData = { info: 'Camino de piedra junto a la piscina' };
-    scene.add(path);
-    stonePaths.push(path);
-    return path;
-}
-
-// Colocar caminos alrededor de la piscina
-createStonePath(70, 45); // Norte
-createStonePath(20, 45); // Oeste
-createStonePath(45, 70); // Este
-createStonePath(45, 20, Math.PI / 2); // Sur (rotado 90°)
 
 // Pistas de Tenis con líneas de campo, red ajustada y postes (con placas solares)
 const tennisGeometry = new THREE.BoxGeometry(36, 0.5, 18);
@@ -727,11 +714,11 @@ for (let i = 0; i < 3; i++) {
     scene.add(solarRoof);
 }
 
-// Raycaster para interacción (incluye caminos)
+// Raycaster para interacción
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 const interactiveObjects = [
-    building, ...tennisCourts, ...padelCourts, pool, ...loungeChairs, ...umbrellas, ...smallTables, ...towels, grass, barCounter, ...barStools, ...stonePaths,
+    building, ...tennisCourts, ...padelCourts, pool, ...loungeChairs, ...umbrellas, ...smallTables, ...towels, grass, barCounter, barRoof, ...barStools,
     ...chairs, table, plant,
     ...bedsWest, ...bedsEast, ...headboardsWest, ...headboardsEast,
     ...nightstandsWestLeft, ...nightstandsWestRight, ...nightstandsEastLeft, ...nightstandsEastRight
@@ -775,15 +762,17 @@ createStreetLight(0, 40);    // Pádel este
 createStreetLight(30, 55);   // Piscina suroeste
 createStreetLight(60, 55);   // Piscina sureste
 
-// Jardines con arbustos (ajustados para evitar piscina y hotel)
-const gardenGeometry = new THREE.BoxGeometry(120, 0.1, 20);
+// Jardines con arbustos
+const gardenGeometry = new THREE.PlaneGeometry(120, 20);
 const gardenMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
 const gardenNorth = new THREE.Mesh(gardenGeometry, gardenMaterial);
 gardenNorth.position.set(0, 0.05, 55);
+gardenNorth.rotation.x = -Math.PI / 2;
 gardenNorth.receiveShadow = true;
 scene.add(gardenNorth);
 const gardenSouth = new THREE.Mesh(gardenGeometry, gardenMaterial);
 gardenSouth.position.set(0, 0.05, -40);
+gardenSouth.rotation.x = -Math.PI / 2;
 gardenSouth.receiveShadow = true;
 scene.add(gardenSouth);
 
@@ -1077,7 +1066,6 @@ document.getElementById('colorBedsPurple').addEventListener('click', () => {
 });
 
 // Animación
-let time = 0;
 function animate() {
     requestAnimationFrame(animate);
     time += 0.01;
@@ -1102,30 +1090,26 @@ function animate() {
     });
 
     loungeChairs.forEach((chair, i) => {
-        chair.position.y = 0.1 + Math.sin(time + i) * 0.05; // Movimiento sutil
+        chair.position.y = 0.1 + Math.sin(time + i) * 0.05;
     });
 
     umbrellas.forEach((umbrella, i) => {
-        const cover = umbrella.children[1]; // La cubierta es el segundo hijo
-        cover.position.x = Math.sin(time + i) * 0.1; // Movimiento oscilante
+        const cover = umbrella.children[1];
+        cover.position.x = Math.sin(time + i) * 0.1;
     });
 
     smallTables.forEach((table, i) => {
-        table.position.y = 0.25 + Math.sin(time + i + 2) * 0.03; // Movimiento sutil, desfasado
+        table.position.y = 0.25 + Math.sin(time + i + 2) * 0.03;
     });
 
     towels.forEach((towel, i) => {
-        towel.position.y = 0.25 + Math.sin(time + i * 1.5) * 0.02; // Movimiento ondulante, más lento
+        towel.position.y = 0.25 + Math.sin(time + i * 1.5) * 0.02;
     });
 
-    grass.position.y = 0.05 + Math.sin(time * 0.5) * 0.01; // Movimiento ondulante muy sutil para el césped
+    grass.position.y = 0.05 + Math.sin(time * 0.5) * 0.01;
 
     barStools.forEach((stool, i) => {
-        stool.position.y = 0.4 + Math.sin(time + i * 0.5) * 0.02; // Movimiento oscilante sutil
-    });
-
-    stonePaths.forEach((path, i) => {
-        path.position.y = 0.1 + Math.sin(time + i * 0.3) * 0.005; // Movimiento muy sutil para simular desgaste
+        stool.position.y = 0.4 + Math.sin(time + i * 0.5) * 0.02;
     });
 
     if (!isDay) {
